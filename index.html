@@ -471,8 +471,8 @@ const MOVIMENTOS = [
   {de:'vorcaro',  para:'moraes',  cor:0xe3b341, css:'#e3b341', rotulo:'R$ 80 mi ao escritório da família', altura:2.3, chipU:0.52, moedas:true},
   {de:'mendonca', para:'moraes',  cor:0xc9d6ea, css:'#c9d6ea', rotulo:'♗f1×h8 · o sigilo levantado', altura:3.4, chipU:0.66},
   {de:'moraes',   para:'bolsonaro', cor:0xe04a3f, css:'#ff7d74', rotulo:'27 anos · domiciliar', altura:2.6, chipU:0.45, desvio:[-1.2,-2.6]},
-  {de:'kim',      para:'alcolumbre', cor:0xff7a1f, css:'#ff7a1f', rotulo:'♞g1×a8 · a CPMI trancada', altura:3.9, chipU:0.26},
-  {de:'flavio',   para:'renan',  cor:0x9d8cff, css:'#b7aaff', rotulo:'Outubro · rumo à 8ª casa', altura:2.5, chipU:0.55, tracejado:true},
+  {de:'kim',      para:'alcolumbre', cor:0xff7a1f, css:'#ff7a1f', rotulo:'♞g1×a8 · a CPMI trancada', altura:3.9, chipU:0.2},
+  {de:'flavio',   para:'renan',  cor:0x9d8cff, css:'#b7aaff', rotulo:'Outubro · rumo à 8ª casa', altura:2.5, chipU:0.4, tracejado:true},
 ];
 
 const CENARIO = {
@@ -1166,7 +1166,7 @@ faixaPreso.className = 'faixa-time escura';
 faixaPreso.innerHTML = 'COM RABO PRESO <span>♛ a fileira negra</span>';
 camadaRot.appendChild(faixaLimpo); camadaRot.appendChild(faixaPreso);
 const POS_FAIXA_LIMPO = new THREE.Vector3(1.8, TAB_TOPO+0.05, 5.9);
-const POS_FAIXA_PRESO = new THREE.Vector3(-4.9, TAB_TOPO+0.05, -5.6);
+const POS_FAIXA_PRESO = new THREE.Vector3(-3.6, TAB_TOPO-1.15, -5.4);
 
 // rótulo do povo
 const rotPovo = document.createElement('button');
