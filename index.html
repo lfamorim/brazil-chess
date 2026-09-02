@@ -471,7 +471,7 @@ const MOVIMENTOS = [
   {de:'vorcaro',  para:'moraes',  cor:0xe3b341, css:'#e3b341', rotulo:'R$ 80 mi ao escritório da família', altura:2.3, chipU:0.52, moedas:true},
   {de:'mendonca', para:'moraes',  cor:0xc9d6ea, css:'#c9d6ea', rotulo:'♗f1×h8 · o sigilo levantado', altura:3.4, chipU:0.66},
   {de:'moraes',   para:'bolsonaro', cor:0xe04a3f, css:'#ff7d74', rotulo:'27 anos · domiciliar', altura:2.6, chipU:0.45, desvio:[-1.2,-2.6]},
-  {de:'kim',      para:'alcolumbre', cor:0xff7a1f, css:'#ff7a1f', rotulo:'♞g1×a8 · a CPMI trancada', altura:3.9, chipU:0.3},
+  {de:'kim',      para:'alcolumbre', cor:0xff7a1f, css:'#ff7a1f', rotulo:'♞g1×a8 · a CPMI trancada', altura:3.9, chipU:0.5},
   {de:'flavio',   para:'renan',  cor:0x9d8cff, css:'#b7aaff', rotulo:'Outubro · rumo à 8ª casa', altura:2.5, chipU:0.18, tracejado:true},
 ];
 
@@ -1155,6 +1155,7 @@ for(const p of pecas){
   if(p.ator.casa && p.ator.casa[1]===7) alto += (p.ator.casa[0]%3)*0.55;          // escalona a fileira de trás
   if(p.ator.casa && p.ator.casa[1]===0) alto += (p.ator.casa[0]%2===1 ? 0.5 : 0); // e a da frente
   if(p.ator.foraDoTabuleiro) alto += 0.75;
+  if(p.ator.caida && !p.ator.foraDoTabuleiro) alto += 1.05;
   rotulosPecas.push({p, el, alto});
 }
 // faixas dos dois times, projetadas nas bordas do tabuleiro
@@ -1320,7 +1321,11 @@ function selecionarAtor(id, abrir){
 
 /* cenário aberto por padrão (exceto em telas estreitas) */
 if(innerWidth>900) mostrarCenario(true); else mostrarCenario(false);
-if(SHOT){ mostrarCenario(true); document.getElementById('dica').classList.add('oculto'); }
+if(SHOT){
+  mostrarCenario(true);
+  document.getElementById('dica').classList.add('oculto');
+  faixaLimpo.classList.add('oculto'); faixaPreso.classList.add('oculto'); // a legenda já nomeia os times
+}
 
 /* pipeline de cor: hex de autoria é sRGB → converter para linear (r128 não converte sozinho) */
 {
