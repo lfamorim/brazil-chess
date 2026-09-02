@@ -1,0 +1,1413 @@
+<title>O Tabuleiro de Brasília</title>
+<meta name="description" content="Leitura de conjuntura do Brasil — setembro de 2026 — em um tabuleiro 3D: os movimentos de Moraes, Mendonça, Vorcaro, Lula, Bolsonaro e do Missão.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Archivo:wght@400;500;600;700;800&display=swap">
+<style>
+  :root{
+    --noite:#060a13;
+    --noite-2:#0b1120;
+    --marfim:#ecdfc3;
+    --marfim-dim:#c8bda2;
+    --ouro:#d9a72e;
+    --ouro-claro:#f2cd6b;
+    --vermelho:#e04a3f;
+    --verde-farda:#3f9464;
+    --toga:#9d8cff;
+    --prata:#c9d6ea;
+    --laranja:#ff7a1f;
+    --vidro:rgba(9,13,26,.72);
+    --vidro-borda:rgba(236,223,195,.14);
+    --sombra:0 18px 50px rgba(0,0,0,.5);
+    --serif:"Fraunces",Georgia,"Times New Roman",serif;
+    --sans:"Archivo","Helvetica Neue",Arial,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--noite);
+    color:var(--marfim);
+    font-family:var(--sans);
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  #cena{position:fixed;inset:0}
+  #cena canvas{display:block}
+
+  /* ---------- camada de rótulos 3D ---------- */
+  #rotulos{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+  .rotulo{
+    position:absolute;left:0;top:0;transform:translate(-50%,-100%);
+    appearance:none;text-align:left;
+    pointer-events:auto;cursor:pointer;white-space:nowrap;
+    display:flex;align-items:center;gap:.5em;
+    background:rgba(8,12,24,.78);
+    border:1px solid rgba(236,223,195,.16);
+    border-radius:999px;padding:.32em .8em .34em .62em;
+    backdrop-filter:blur(6px);
+    box-shadow:0 6px 18px rgba(0,0,0,.45);
+    transition:opacity .25s, border-color .2s, background .2s;
+    will-change:transform,opacity;
+  }
+  .rotulo:hover,.rotulo.ativo{border-color:rgba(242,205,107,.55);background:rgba(14,19,36,.92)}
+  .rotulo .ponto{width:.55em;height:.55em;border-radius:50%;flex:none;box-shadow:0 0 8px currentColor}
+  .rotulo .nome{font-weight:700;font-size:.72rem;letter-spacing:.02em;color:var(--marfim)}
+  .rotulo .cargo{font-size:.56rem;letter-spacing:.08em;text-transform:uppercase;color:var(--marfim-dim)}
+  .chip-arco{
+    position:absolute;left:0;top:0;transform:translate(-50%,-50%);
+    pointer-events:none;white-space:nowrap;
+    font-size:.6rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--marfim);opacity:.85;
+    background:rgba(8,12,24,.62);border:1px solid rgba(236,223,195,.12);
+    border-radius:4px;padding:.28em .6em;backdrop-filter:blur(4px);
+  }
+  .chip-arco b{font-weight:800}
+  .faixa-time{
+    position:absolute;left:0;top:0;transform:translate(-50%,-50%);
+    pointer-events:none;white-space:nowrap;
+    font-size:.62rem;font-weight:800;letter-spacing:.3em;color:var(--marfim);
+    background:rgba(236,223,195,.1);border:1px solid rgba(236,223,195,.28);
+    border-radius:4px;padding:.4em .9em;backdrop-filter:blur(4px);
+    transition:opacity .25s;
+  }
+  .faixa-time span{font-weight:600;letter-spacing:.12em;color:var(--marfim-dim);margin-left:.8em}
+  .faixa-time.escura{background:rgba(10,12,22,.55);border-color:rgba(120,126,150,.4);color:#aeb4c9}
+
+  /* ---------- HUD ---------- */
+  #hud{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between}
+  #topo{display:flex;justify-content:space-between;align-items:flex-start;padding:clamp(16px,3vw,36px)}
+  #titulo{max-width:34rem}
+  #titulo .olho{
+    font-size:.68rem;font-weight:700;letter-spacing:.34em;text-transform:uppercase;
+    color:var(--ouro-claro);display:flex;align-items:center;gap:.9em;
+  }
+  #titulo .olho::after{content:"";height:1px;width:4.5em;background:linear-gradient(90deg,var(--ouro),transparent)}
+  #titulo h1{
+    font-family:var(--serif);font-weight:560;font-size:clamp(1.9rem,4.4vw,3.4rem);
+    line-height:1.02;letter-spacing:-.01em;margin-top:.32em;text-wrap:balance;
+    text-shadow:0 2px 30px rgba(0,0,0,.6);
+  }
+  #titulo h1 em{font-style:italic;font-weight:430;color:var(--ouro-claro)}
+  #titulo .linha-fina{
+    margin-top:.7em;font-size:.82rem;color:var(--marfim-dim);max-width:30rem;line-height:1.5;
+    text-shadow:0 1px 12px rgba(0,0,0,.7);
+  }
+  #titulo .linha-fina b{color:var(--marfim);font-weight:600}
+
+  #acoes{pointer-events:auto;display:flex;gap:.6em}
+  .botao{
+    font:inherit;font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--marfim);background:var(--vidro);border:1px solid var(--vidro-borda);
+    border-radius:999px;padding:.72em 1.25em;cursor:pointer;backdrop-filter:blur(8px);
+    transition:border-color .2s,color .2s,background .2s;
+  }
+  .botao:hover{border-color:rgba(242,205,107,.6);color:var(--ouro-claro)}
+  .botao:focus-visible{outline:2px solid var(--ouro-claro);outline-offset:2px}
+
+  #rodape{padding:0 clamp(16px,3vw,36px) clamp(14px,2.4vw,26px);display:flex;flex-direction:column;gap:.9em}
+  #legenda{display:flex;flex-wrap:wrap;gap:.5em;pointer-events:auto}
+  .peca-chip{
+    display:flex;align-items:center;gap:.5em;font-size:.66rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--marfim-dim);background:rgba(8,12,24,.55);border:1px solid rgba(236,223,195,.1);
+    border-radius:999px;padding:.42em .85em;backdrop-filter:blur(6px);
+  }
+  .peca-chip i{width:.6em;height:.6em;border-radius:50%;box-shadow:0 0 8px currentColor}
+  #dica{font-size:.68rem;letter-spacing:.06em;color:rgba(200,189,162,.75)}
+
+  /* ---------- ticker ---------- */
+  #ticker{
+    pointer-events:auto;display:flex;align-items:stretch;overflow:hidden;
+    background:var(--vidro);border:1px solid var(--vidro-borda);border-radius:12px;
+    backdrop-filter:blur(10px);box-shadow:var(--sombra);
+  }
+  #ticker .selo{
+    flex:none;display:flex;align-items:center;gap:.55em;padding:.85em 1.1em;
+    font-size:.68rem;font-weight:800;letter-spacing:.22em;color:var(--noite);
+    background:linear-gradient(135deg,var(--ouro-claro),var(--ouro));
+    border-radius:11px 0 0 11px;
+  }
+  #ticker .selo .pulso{width:.55em;height:.55em;border-radius:50%;background:var(--noite);animation:pulso 1.6s infinite}
+  @keyframes pulso{0%,100%{opacity:1}50%{opacity:.25}}
+  #esteira{overflow:hidden;display:flex;align-items:center;flex:1}
+  #esteira .trilho{display:flex;gap:3.2em;padding:0 1.6em;animation:rolar 90s linear infinite;white-space:nowrap}
+  #esteira:hover .trilho{animation-play-state:paused}
+  .manchete{font-size:.8rem;color:var(--marfim);display:flex;align-items:baseline;gap:.7em}
+  .manchete .data{font-variant-numeric:tabular-nums;font-size:.66rem;font-weight:700;letter-spacing:.1em;color:var(--ouro-claro)}
+  .manchete .fonte{font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--marfim-dim)}
+  @keyframes rolar{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+  /* ---------- painel lateral ---------- */
+  #painel{
+    position:fixed;top:clamp(16px,3vw,36px);right:clamp(16px,3vw,36px);bottom:calc(clamp(14px,2.4vw,26px) + 76px);
+    width:min(27.5rem,calc(100vw - 32px));
+    background:var(--vidro);border:1px solid var(--vidro-borda);border-radius:18px;
+    backdrop-filter:blur(16px);box-shadow:var(--sombra);
+    display:flex;flex-direction:column;overflow:hidden;
+    transform:translateX(calc(100% + 48px));transition:transform .5s cubic-bezier(.22,.9,.24,1);
+  }
+  #painel.aberto{transform:none}
+  #painel .cabeca{padding:1.35rem 1.5rem 1rem;border-bottom:1px solid rgba(236,223,195,.1);position:relative}
+  #painel .faixa{position:absolute;inset:0 auto 0 0;width:4px;border-radius:0 4px 4px 0}
+  #fechar{
+    position:absolute;top:.9rem;right:.9rem;width:2rem;height:2rem;border-radius:50%;
+    border:1px solid var(--vidro-borda);background:transparent;color:var(--marfim-dim);
+    font-size:1rem;cursor:pointer;line-height:1;transition:color .2s,border-color .2s;
+  }
+  #fechar:hover{color:var(--marfim);border-color:rgba(236,223,195,.4)}
+  #fechar:focus-visible{outline:2px solid var(--ouro-claro);outline-offset:2px}
+  #painel .chips{display:flex;gap:.45em;flex-wrap:wrap;margin-bottom:.6em}
+  .chip{
+    font-size:.6rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+    padding:.34em .7em;border-radius:999px;border:1px solid currentColor;opacity:.95;
+  }
+  #painel h2{font-family:var(--serif);font-weight:590;font-size:1.55rem;line-height:1.05;letter-spacing:-.01em;text-wrap:balance}
+  #painel .sub{margin-top:.35em;font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:var(--marfim-dim)}
+  #painel .corpo{flex:1 1 auto;min-height:0;padding:1.1rem 1.5rem 1.4rem;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(236,223,195,.25) transparent}
+  .mov{
+    font-family:var(--serif);font-style:italic;font-weight:430;font-size:1.02rem;line-height:1.5;color:var(--marfim);
+    border-left:2px solid var(--ouro);padding-left:.9em;margin-bottom:1.1em;
+  }
+  .analise{font-size:.86rem;line-height:1.65;color:var(--marfim-dim);margin-bottom:1.3em}
+  .analise b{color:var(--marfim);font-weight:600}
+  .secao{font-size:.64rem;font-weight:800;letter-spacing:.26em;text-transform:uppercase;color:var(--ouro-claro);margin-bottom:.7em;display:flex;align-items:center;gap:.8em}
+  .secao::after{content:"";height:1px;flex:1;background:linear-gradient(90deg,rgba(217,167,46,.5),transparent)}
+  .noticias{list-style:none;display:flex;flex-direction:column}
+  .noticias li{padding:.7em 0;border-bottom:1px solid rgba(236,223,195,.08)}
+  .noticias li:last-child{border-bottom:0}
+  .noticias .meta{display:flex;gap:.8em;align-items:baseline;margin-bottom:.25em}
+  .noticias .data{font-variant-numeric:tabular-nums;font-size:.64rem;font-weight:700;letter-spacing:.1em;color:var(--ouro-claro)}
+  .noticias .fonte{font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--marfim-dim)}
+  .noticias .titulo-n{font-size:.85rem;line-height:1.45;color:var(--marfim)}
+  .noticias a{color:inherit;text-decoration:none;border-bottom:1px dotted rgba(236,223,195,.35)}
+  .noticias a:hover{color:var(--ouro-claro);border-color:var(--ouro-claro)}
+  .nota-final{margin-top:1.2em;font-size:.66rem;line-height:1.6;color:rgba(200,189,162,.66)}
+
+  /* cenário (lista de movimentos) */
+  .lances{list-style:none;display:flex;flex-direction:column;gap:.85em;margin-bottom:1.3em}
+  .lances li{display:flex;gap:.85em;align-items:flex-start}
+  .lances .glifo{
+    flex:none;width:2.1em;height:2.1em;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    font-size:1.05rem;background:rgba(236,223,195,.06);border:1px solid rgba(236,223,195,.12);
+  }
+  .lances .texto{font-size:.83rem;line-height:1.55;color:var(--marfim-dim);padding-top:.15em}
+  .lances .texto b{color:var(--marfim);font-weight:600}
+
+  /* enquete */
+  .enquete{display:flex;flex-direction:column;gap:.5em;margin-bottom:1.4em}
+  .enquete-op{
+    font:inherit;font-size:.8rem;text-align:left;color:var(--marfim);
+    display:flex;align-items:center;gap:.7em;cursor:pointer;
+    background:rgba(236,223,195,.05);border:1px solid rgba(236,223,195,.14);
+    border-radius:10px;padding:.65em .85em;transition:border-color .2s,background .2s;
+  }
+  .enquete-op:hover{border-color:rgba(242,205,107,.5)}
+  .enquete-op:focus-visible{outline:2px solid var(--ouro-claro);outline-offset:2px}
+  .enquete-op .marca{
+    flex:none;width:.95em;height:.95em;border-radius:50%;
+    border:2px solid rgba(236,223,195,.4);transition:all .2s;
+  }
+  .enquete-op.votado{border-color:var(--ouro);background:rgba(217,167,46,.12)}
+  .enquete-op.votado .marca{border-color:var(--ouro-claro);background:var(--ouro-claro);box-shadow:0 0 8px rgba(242,205,107,.7)}
+
+  @media (max-width:760px){
+    #titulo h1{font-size:1.7rem}
+    #painel{top:auto;right:8px;left:8px;bottom:86px;width:auto;max-height:58vh;transform:translateY(calc(100% + 100px))}
+    #painel.aberto{transform:none}
+    #legenda{display:none}
+    #dica{display:none}
+  }
+  @media (prefers-reduced-motion:reduce){
+    #esteira .trilho{animation:none}
+    .pulso{animation:none}
+  }
+  .oculto{display:none!important}
+</style>
+
+<div id="cena" aria-label="Tabuleiro 3D do cenário político brasileiro"></div>
+<div id="rotulos"></div>
+
+<div id="hud">
+  <div id="topo">
+    <div id="titulo">
+      <div class="olho">Conjuntura · Setembro 2026</div>
+      <h1>O <em>Tabuleiro</em> de Brasília</h1>
+      <p class="linha-fina">Uma partida, dois times: o Brasil <b>sem rabo preso</b> com o dinheiro do Master — e o Brasil <b>com</b>. O povo cerca o tabuleiro. Clique nas peças para ler cada lance e as notícias.</p>
+    </div>
+    <div id="acoes">
+      <button class="botao" id="btn-cenario">Ler o cenário</button>
+    </div>
+  </div>
+
+  <div id="rodape">
+    <div id="legenda"></div>
+    <div id="ticker" aria-label="Últimas notícias">
+      <div class="selo"><span class="pulso"></span>ÚLTIMAS</div>
+      <div id="esteira"><div class="trilho" id="trilho"></div></div>
+    </div>
+    <div id="dica">arraste para orbitar · role para aproximar · clique nas peças e nos nomes</div>
+  </div>
+</div>
+
+<aside id="painel" aria-live="polite">
+  <div class="cabeca">
+    <span class="faixa" id="painel-faixa"></span>
+    <button id="fechar" aria-label="Fechar painel">✕</button>
+    <div class="chips" id="painel-chips"></div>
+    <h2 id="painel-titulo"></h2>
+    <div class="sub" id="painel-sub"></div>
+  </div>
+  <div class="corpo" id="painel-corpo"></div>
+</aside>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+'use strict';
+/* =====================================================================
+   DADOS — atores, movimentos e noticiário (manchetes públicas, datadas)
+   ===================================================================== */
+/* dois times, um critério: relação documentada com o dinheiro do Master */
+const TIME = {
+  limpo: { nome:'Sem rabo preso', cor:0xe8dcc0, css:'#e8dcc0' },
+  preso: { nome:'Com rabo preso', cor:0x1a1c26, css:'#565b6e' },
+};
+const CORES = { neutroClaro: 0xe8dcbd, neutroEscuro: 0x14311f };
+const CSS = {
+  governo:'#ff6a5e', bolso:'#4fae76', stf:'#9d8cff', mendonca:'#cfdcef',
+  master:'#e3b341', missao:'#ff7a1f', povo:'#ffd9a0', pf:'#7ea7d8',
+  toffoli:'#c9a6e8', alcolumbre:'#e0996a', gonet:'#c9b47a', faria:'#86d0c5',
+  costa:'#a8c686', tanure:'#c78f5a'
+};
+
+const ATORES = [
+  {
+    id:'moraes', nome:'Alexandre de Moraes', cargo:'Ministro do STF', peca:'Torre negra · h8', glifo:'♜',
+    time:'preso', aura:0x9d8cff, css:CSS.stf, casa:[7,7],
+    mov:'A torre no canto do tabuleiro escuro: o relatório da PF pôs o rastro do dinheiro do Master dentro da própria casa.',
+    analise:'Relator da trama golpista e senhor do destino de <b>Bolsonaro</b>, Moraes chegou à reta final de 2026 como a peça mais poderosa do jogo — e a mais exposta. O relatório de 218 páginas da PF sobre o celular de Vorcaro descreve encontros na sua casa, mensagens pedindo "proteção" e o contrato de <b>R$ 131 milhões</b> do Master com o escritório da esposa, Viviane Barci — que recebeu <b>R$ 80,2 milhões</b> do grupo. No Senado, já é o 54º pedido de impeachment. Moraes e o escritório <b>negam irregularidades</b>, e a própria PF ressalva que o laudo não é conclusivo — mas o plenário do STF terá de encarar o caso.',
+    noticias:[
+      {d:'2026-09-01', f:'Poder360', t:'Mendonça retira sigilo de ação que expõe relação entre Vorcaro e Moraes', u:'https://www.poder360.com.br/poder-justica/mendonca-retira-sigilo-de-acao-sobre-vorcaro-e-moraes/'},
+      {d:'2026-09-01', f:'Senado', t:'Senadores pedem impeachment do ministro Alexandre de Moraes', u:'https://www12.senado.leg.br/noticias/materias/2026/09/01/senadores-pedem-impeachment-do-ministro-alexandre-de-moraes-do-stf'},
+      {d:'2026-04-08', f:'CNN Brasil', t:'Lula diz ter orientado Moraes a se declarar impedido de julgar o caso Master', u:'https://www.cnnbrasil.com.br/politica/lula-diz-ter-orientado-moraes-a-se-declarar-impedido-de-julgar-caso-master/'},
+      {d:'2025-12-12', f:'CNN Brasil', t:'EUA retiram Moraes, a esposa e o Instituto Lex das sanções da Lei Magnitsky', u:'https://www.cnnbrasil.com.br/internacional/eua-retiram-moraes-e-esposa-de-lista-de-sancoes/'},
+    ]
+  },
+  {
+    id:'mendonca', nome:'André Mendonça', cargo:'Ministro do STF · vice-presidente do TSE', peca:'Bispo branco · f1', glifo:'♗',
+    time:'limpo', aura:0xcfdcef, css:CSS.mendonca, casa:[5,0],
+    mov:'O bispo branco corta a diagonal mais longa do tabuleiro — de f1 até a torre negra de h8: o sigilo levantado, o caso no plenário.',
+    analise:'O ministro "terrivelmente evangélico" herdou a relatoria do Master em fevereiro, quando Toffoli caiu do caso — e jogou duro: <b>re-prendeu Vorcaro</b> em março, negou domiciliar, mandou o banqueiro para a Papudinha e autorizou a PF a caçar patrimônio no exterior. Em 1º de setembro, fez o lance da semana: <b>levantou o sigilo</b> do relatório que expõe a relação Vorcaro–Moraes e o remeteu ao plenário. Nem tudo é linha reta: os HCs que dispensaram Vorcaro e um ex-sócio de depor no Congresso irritaram deputados — e o mandado de segurança de <b>Kim Kataguiri</b> pela CPMI segue na sua gaveta. Como vice-presidente do TSE, ainda arbitra a eleição.',
+    noticias:[
+      {d:'2026-09-01', f:'Poder360', t:'Saiba como a PF descobriu as mensagens de Vorcaro para Moraes', u:'https://www.poder360.com.br/poder-justica/saiba-como-a-pf-descobriu-as-mensagens-de-vorcaro-para-moraes/'},
+      {d:'2026-06-25', f:'STF', t:'Relator mantém preventiva de Vorcaro e o transfere para a "Papudinha"', u:'https://noticias.stf.jus.br/postsnoticias/relator-mantem-prisao-preventiva-de-daniel-vorcaro-e-determina-transferencia-para-papudinha/'},
+      {d:'2026-04-14', f:'TSE', t:'Nunes Marques e André Mendonça são eleitos presidente e vice do TSE', u:'https://www.tse.jus.br/comunicacao/noticias/2026/Abril/ministros-nunes-marques-e-andre-mendonca-sao-eleitos-presidente-e-vice-do-tse-1'},
+      {d:'2026-02-12', f:'Ag. Brasil', t:'André Mendonça assume a relatoria do inquérito do Banco Master', u:'https://agenciabrasil.ebc.com.br/justica/noticia/2026-02/andre-mendonca-e-o-novo-relator-do-inquerito-do-master'},
+    ]
+  },
+  {
+    id:'vorcaro', nome:'Daniel Vorcaro', cargo:'Dono do Banco Master · preso', peca:'Dama negra caída · d8', glifo:'♛',
+    time:'preso', aura:0xe3b341, css:CSS.master, casa:[3,7], caida:true, ouro:true,
+    mov:'A dama de ouro do time escuro tombou ao lado do próprio rei — e é a única peça que pode entregar todas as outras: a delação.',
+    analise:'Preso na <b>Operação Compliance Zero</b> ao tentar decolar de Guarulhos, solto pelo TRF-1 com tornozeleira e <b>re-preso por Mendonça</b> em março, Vorcaro está na Papudinha desde junho — indiciado pela PF ao lado do ex-presidente do BRB. O Master foi liquidado com fraude estimada em até <b>R$ 60 bilhões</b>; a conta no FGC, somadas as quebras conexas, beira <b>R$ 52 bilhões</b>, a maior da história. Com a defesa trocada, ele tenta a <b>terceira proposta de delação</b> — e é o que cada campo do tabuleiro mais teme: o que a dama caída tem a contar.',
+    noticias:[
+      {d:'2026-08-14', f:'Gazeta do Povo', t:'Vorcaro muda a defesa e tenta a delação premiada pela terceira vez', u:'https://www.gazetadopovo.com.br/republica/daniel-vorcaro-muda-defesa-e-tenta-delacao-premiada-pela-terceira-vez/'},
+      {d:'2026-08-05', f:'Gazeta do Povo', t:'PF conclui inquérito do Master e indicia Vorcaro e o ex-presidente do BRB', u:'https://www.gazetadopovo.com.br/republica/pf-pretende-concluir-inquerito-master-agosto-indiciar-daniel-vorcaro/'},
+      {d:'2026-03-21', f:'CNN Brasil', t:'A trajetória de Daniel Vorcaro pelo sistema prisional brasileiro', u:'https://www.cnnbrasil.com.br/politica/a-trajetoria-de-daniel-vorcaro-pelo-sistema-prisional-brasileiro/'},
+      {d:'2026-02-20', f:'Poder360', t:'Liquidações ligadas ao Master criam rombo de quase R$ 52 bi no FGC', u:'https://www.poder360.com.br/poder-justica/liquidacoes-ligadas-ao-master-criam-rombo-de-quase-r-52-bi-no-fgc/'},
+    ]
+  },
+  {
+    id:'lula', nome:'Lula', cargo:'Presidente · candidato à reeleição', peca:'Rei negro · e8', glifo:'♚',
+    time:'preso', aura:0xe04a3f, css:CSS.governo, casa:[4,7],
+    mov:'O rei do tabuleiro escuro joga o final de partida: 39% no primeiro turno, empate técnico no segundo — protegido pela fileira que blindou o relatório.',
+    analise:'Aos 80 anos, com <b>Alckmin</b> de novo na chapa, Lula lidera o 1º turno (39% no Datafolha) mas vê o 2º apertado: <b>47% a 43%</b> contra Flávio. Na leitura deste tabuleiro, seu rabo preso é por tabela: foi a <b>sua base</b> que derrubou, por 19 a 12, o relatório da CPMI do INSS que pedia o indiciamento de Vorcaro — e de <b>Lulinha</b>; e Toffoli, o primeiro relator do caso, é indicação sua. Lula <b>nega qualquer relação</b> com o esquema e diz ter aconselhado Moraes a se declarar impedido. Enquanto isso, negocia com <b>Trump</b> a saída do tarifaço e joga por contenção: quanto menos lances, melhor para o rei.',
+    noticias:[
+      {d:'2026-08-31', f:'Brasil de Fato', t:'Brasil e EUA retomam negociações sobre o tarifaço após ligação Lula–Trump', u:'https://www.brasildefato.com.br/2026/08/31/brasil-e-eua-retomam-negociacoes-sobre-tarifaco-imposto-a-produtos-brasileiros/'},
+      {d:'2026-08-21', f:'Datafolha', t:'Lula lidera a disputa com 39%; Flávio Bolsonaro registra 33%', u:'https://www.band.com.br/politica/eleicoes/2026/datafolha-divulga-1-pesquisa-presidencial-apos-inicio-oficial-de-campanhas-202608211834'},
+      {d:'2026-08-14', f:'Quaest', t:'48% desaprovam e 46% aprovam o governo Lula', u:'https://www.metropoles.com/brasil/quaest-48-desaprovam-e-46-aprovam-governo-lula'},
+      {d:'2026-03-28', f:'Senado', t:'CPMI do INSS termina sem relatório final; base rejeita indiciamentos', u:'https://www12.senado.leg.br/noticias/materias/2026/03/28/cpmi-do-inss-termina-sem-relatorio-final'},
+    ]
+  },
+  {
+    id:'bolsonaro', nome:'Jair Bolsonaro', cargo:'Ex-presidente · prisão domiciliar', peca:'Rei capturado · à margem', glifo:'♔',
+    time:'preso', aura:0x2f7a50, css:CSS.bolso, casa:null, foraDoTabuleiro:true, caida:true,
+    mov:'A peça capturada da partida anterior, guardada à margem do tabuleiro: 27 anos de pena, tornozeleira, domiciliar — e ainda assim move o time por procuração.',
+    analise:'Condenado a <b>27 anos e 3 meses</b> pela trama golpista, com trânsito em julgado, Bolsonaro passou pela cela da PF e pela Papudinha até chegar à <b>domiciliar humanitária</b> após a broncopneumonia de março. Moraes proibiu visitas eleitorais — chegou a suspender as do próprio Flávio — e mantém no ar a ameaça do regime fechado. A <b>Lei da Dosimetria</b>, que cortaria sua pena para ~19 anos, teve o veto de Lula derrubado e foi suspensa por Moraes; Eduardo, cassado e condenado, faz lobby nos EUA pela volta da Magnitsky. Capturado, segue sendo o centro de gravidade do peão que corre para coroar — e foi no seu governo que o Master aprendeu a jogar: o articulador dos encontros de Vorcaro era seu ministro.',
+    noticias:[
+      {d:'2026-08-04', f:'O Tempo', t:'Bolsonaro completa um ano preso, sob risco de voltar ao regime fechado', u:'https://www.otempo.com.br/politica/judiciario/2026/8/4/bolsonaro-completa-um-ano-preso-sob-risco-de-voltar-ao-regime-fechado'},
+      {d:'2026-07-03', f:'Ag. Brasil', t:'Moraes decide manter Bolsonaro em prisão domiciliar e veta atos eleitorais', u:'https://agenciabrasil.ebc.com.br/justica/noticia/2026-07/alexandre-de-moraes-decide-manter-bolsonaro-em-prisao-domiciliar'},
+      {d:'2026-06-16', f:'ConJur', t:'STF condena Eduardo Bolsonaro a 4 anos e 2 meses por coação', u:'https://conjur.com.br/2026-jun-16/stf-condena-eduardo-bolsonaro-por-coacao-em-acao-ligada-a-trama-golpista/'},
+      {d:'2026-04-30', f:'Senado', t:'Congresso derruba veto à Lei da Dosimetria; Moraes suspenderia a lei dias depois', u:'https://www12.senado.leg.br/noticias/materias/2026/04/30/congresso-derruba-veto-e-possibilita-reducao-de-penas-pelo-8-de-janeiro'},
+    ]
+  },
+  {
+    id:'flavio', nome:'Flávio Bolsonaro', cargo:'Senador · candidato a presidente (PL)', peca:'Peão passado · e5', glifo:'♙',
+    time:'preso', aura:0x57a06b, css:'#7cc494', casa:[4,4], passado:true,
+    mov:'O peão passado do time escuro: ungido pelo pai, avança casa a casa rumo à coroação de outubro — contra o rei do próprio tabuleiro.',
+    analise:'Escolhido por Bolsonaro no fim de 2025, oficializado com <b>Alfredo Gaspar</b> de vice, Flávio faz da <b>anistia</b> e do "Fora Moraes" o motor da campanha: no dia do relatório da PF, pediu a <b>renúncia</b> do ministro. Marca 33% no Datafolha e chega ao 2º turno em <b>empate técnico</b> com Lula (43% a 47%). No critério deste tabuleiro, joga do lado escuro: reportagens corroboradas por veículos como InfoMoney e Congresso em Foco apontam que o STF autorizou, em julho, <b>investigação sobre R$ 134 milhões do Master</b> ligados a um filme sobre ele ("Dark Horse") — o senador nega irregularidades. E é o paradoxo do condomínio: o peão corre contra o rei do próprio time.',
+    noticias:[
+      {d:'2026-09-01', f:'Jornal Opção', t:'Zema pede prisão, Caiado cobra afastamento e Flávio defende renúncia de Moraes', u:'https://www.jornalopcao.com.br/politica/zema-pede-prisao-caiado-cobra-afastamento-e-flavio-bolsonaro-defende-renuncia-de-moraes-864072/'},
+      {d:'2026-08-21', f:'Poder360', t:'Lula tem 47% e Flávio, 43% no 2º turno, diz o Datafolha', u:'https://www.poder360.com.br/poder-eleicoes-2026/lula-tem-47-e-flavio-43-em-2o-turno-diz-datafolha/'},
+      {d:'2026-08-05', f:'C. em Foco', t:'PL anuncia Alfredo Gaspar como vice na chapa de Flávio Bolsonaro', u:'https://www.congressoemfoco.com.br/noticia/121032/pl-anuncia-alfredo-gaspar-para-vice-na-chapa-de-flavio-bolsonaro'},
+    ]
+  },
+  {
+    id:'kim', nome:'Kim Kataguiri', cargo:'Deputado federal (Missão-SP)', peca:'Cavalo branco · g1', glifo:'♞',
+    time:'limpo', aura:0xff7a1f, css:CSS.missao, casa:[6,0],
+    mov:'O cavalo branco mira a torre de a8: o mandado de segurança para arrancar de Alcolumbre a CPMI do Banco Master.',
+    analise:'Deputado mais votado da nova direita liberal, Kim abriu mão do Palácio dos Bandeirantes para defender o mandato — e virar a lança jurídica do <b>Missão</b>: é dele o mandado de segurança no STF para obrigar Alcolumbre a instalar a <b>CPMI do Master</b>, engavetada mesmo com 281 assinaturas. A ação caiu com Mendonça, que até hoje não decidiu. O lance do cavalo: forçar o sistema a investigar a si mesmo.',
+    noticias:[
+      {d:'2026-05-21', f:'Ag. Senado', t:'Alcolumbre diz que abertura da CPMI do Master é decisão do presidente do Congresso', u:'https://www12.senado.leg.br/noticias/materias/2026/05/21/davi-abertura-da-cpmi-do-master-e-decisao-do-presidente-do-congresso'},
+      {d:'2026-05-15', f:'InfoMoney', t:'Mendonça vai relatar as ações que cobram a instalação da CPMI do Master', u:'https://www.infomoney.com.br/politica/andre-mendonca-vai-relatar-acoes-que-cobram-instalacao-de-cpmi-do-banco-master/'},
+      {d:'2026-06-15', f:'CartaCapital', t:'Kim Kataguiri desiste do governo de SP e disputa a reeleição na Câmara', u:'https://www.cartacapital.com.br/cartaexpressa/kim-kataguiri-nao-e-mais-pre-candidato-ao-governo-de-sao-paulo/'},
+    ]
+  },
+  {
+    id:'renan', nome:'Renan Santos', cargo:'Candidato a presidente (Missão, 14)', peca:'Rei branco · e1', glifo:'♔',
+    time:'limpo', aura:0xff7a1f, css:CSS.missao, casa:[4,0],
+    mov:'O rei do time limpo — a coroa que o exército marfim tenta levar a outubro, saído do meio da multidão que cerca o tabuleiro.',
+    analise:'Fundador do MBL e presidente do <b>Missão</b>, Renan é o candidato do partido à Presidência — chapa com o tenente-coronel <b>Aroldo Medina</b>, número <b>14</b>. Oscila entre 4% e <b>7,6%</b> (AtlasIntel) e disputa o 3º lugar com a tese de que a polarização é um <b>condomínio</b>: Lula e o clã Bolsonaro precisam um do outro, e só um choque de fora quebra o jogo. O caso Master é sua prova de conceito — chama Moraes de "cabo eleitoral do Flávio" e, na semana da campanha suspensa e liberada por Toffoli, gritou perseguição. É xeque simultâneo nos dois lados da velha partida.',
+    noticias:[
+      {d:'2026-08-31', f:'Gazeta do Povo', t:'Renan Santos vincula suspensão da campanha ao caso Master e promete recorrer', u:'https://www.gazetadopovo.com.br/eleicoes/2026/renan-santos-vincula-decisao-de-toffoli-ao-caso-master-e-promete-recorrer/'},
+      {d:'2026-08-31', f:'AtlasIntel', t:'Renan Santos chega a 7,6% e disputa o 3º lugar na corrida presidencial', u:'https://www.poder360.com.br/poder-eleicoes-2026/lula-tem-471-contra-426-de-flavio-no-2o-turno-diz-pesquisa/'},
+      {d:'2026-08-01', f:'Brasil de Fato', t:'Partido Missão oficializa a candidatura de Renan Santos à Presidência', u:'https://www.brasildefato.com.br/2026/08/01/partido-missao-oficializa-candidatura-de-renan-santos-a-presidencia/'},
+      {d:'2026-07-10', f:'Ag. Pública', t:'Partido Missão: o projeto de poder de Renan Santos e do MBL', u:'https://apublica.org/2026/07/partido-missao-o-projeto-de-poder-de-renan-santos-e-do-mbl/'},
+    ]
+  },
+  {
+    id:'amanda', nome:'Amanda Vettorazzo', cargo:'Vereadora de SP · coordenação da campanha', peca:'Dama branca · d1', glifo:'♕',
+    time:'limpo', aura:0xff7a1f, css:CSS.missao, casa:[3,0],
+    mov:'A dama branca comanda a operação: a peça de maior alcance do time limpo, das redes às ruas, cobrindo todas as diagonais da campanha.',
+    analise:'Vereadora de São Paulo e coordenadora nacional do MBL, Amanda não disputa cargo em 2026: coordena a campanha presidencial de <b>Renan</b>, que promete levá-la ao ministério. É o rosto do partido que nasceu do movimento — registro aprovado por unanimidade no TSE em novembro de 2025, número <b>14</b> — e a operação de rua e de rede do Missão, dos atos na Faria Lima contra o Master à reta final da eleição.',
+    noticias:[
+      {d:'2026-08-25', f:'Poder360', t:'Quem é Amanda Vettorazzo, que deu voz de prisão a suspeito de oferecer propina', u:'https://www.poder360.com.br/poder-eleicoes-2026/saiba-quem-e-amanda-vettorazzo-que-deu-voz-de-prisao-por-propina/'},
+      {d:'2025-11-04', f:'TSE', t:'TSE aprova por unanimidade o registro do Partido Missão, o 30º do país', u:'https://www.tse.jus.br/comunicacao/noticias/2025/Novembro/tse-aprova-registro-e-homologa-estatuto-do-partido-missao'},
+    ]
+  },
+  {
+    id:'pf', nome:'Polícia Federal', cargo:'Operação Compliance Zero', peca:'Torre branca · a1', glifo:'♖',
+    time:'limpo', aura:0x7ea7d8, css:CSS.pf, casa:[0,0],
+    mov:'A torre branca avança em coluna: 218 páginas sobre o celular de Vorcaro, indiciamentos — e ainda faltam oito celulares a periciar.',
+    analise:'Sob o diretor-geral <b>Andrei Rodrigues</b> — de quem Vorcaro pedia "proteção" nas mensagens —, a PF prendeu o banqueiro duas vezes, concluiu o inquérito da primeira fase com o <b>indiciamento</b> de Vorcaro, do ex-presidente do BRB e de Nelson Tanure, e entregou ao STF o relatório que documenta a relação do Master com Moraes. A própria corporação ressalva: o laudo, feito em 72 horas sobre um único aparelho, <b>não é conclusivo</b> — há mais oito celulares na fila. A torre segue abrindo a coluna, arquivo por arquivo.',
+    noticias:[
+      {d:'2026-09-02', f:'Poder360', t:'Relatório da PF que cita Moraes não é conclusivo; há mais celulares a investigar', u:'https://www.poder360.com.br/poder-justica/relatorio-da-pf-que-cita-moraes-nao-e-conclusivo-e-ha-mais-celulares-a-investigar/'},
+      {d:'2026-09-01', f:'Poder360', t:'Saiba como a PF descobriu as mensagens de Vorcaro para Moraes', u:'https://www.poder360.com.br/poder-justica/saiba-como-a-pf-descobriu-as-mensagens-de-vorcaro-para-moraes/'},
+      {d:'2026-08-05', f:'Gazeta do Povo', t:'PF conclui inquérito do Master e indicia Vorcaro, Costa e Tanure', u:'https://www.gazetadopovo.com.br/republica/pf-pretende-concluir-inquerito-master-agosto-indiciar-daniel-vorcaro/'},
+    ]
+  },
+  {
+    id:'toffoli', nome:'Dias Toffoli', cargo:'Ministro do STF · ex-relator do caso', peca:'Bispo negro · c8', glifo:'♝',
+    time:'preso', aura:0xc9a6e8, css:CSS.toffoli, casa:[2,7],
+    mov:'O bispo que caiu da diagonal: relatou o caso Master por dois meses — até a PF encontrar o próprio nome no celular de Vorcaro.',
+    analise:'Primeiro relator do inquérito do Master, Toffoli se declarou <b>impedido</b> e deixou o caso em fevereiro, depois que a perícia achou menções a ele no celular de Vorcaro — sob protestos de rua do MBL/Missão na Faria Lima. Voltou ao centro do jogo na reta final: no TSE, <b>suspendeu a campanha digital de Renan Santos</b> em 31 de agosto (liberada no dia seguinte, após regularização) — decisão que o candidato do Missão chamou de retaliação pela cruzada contra o caso Master.',
+    noticias:[
+      {d:'2026-08-31', f:'Gazeta do Povo', t:'Renan Santos vincula suspensão da campanha por Toffoli ao caso Master', u:'https://www.gazetadopovo.com.br/eleicoes/2026/renan-santos-vincula-decisao-de-toffoli-ao-caso-master-e-promete-recorrer/'},
+      {d:'2026-02-12', f:'Ag. Brasil', t:'Toffoli deixa a relatoria do Master; sorteio leva o caso a Mendonça', u:'https://agenciabrasil.ebc.com.br/justica/noticia/2026-02/andre-mendonca-e-o-novo-relator-do-inquerito-do-master'},
+      {d:'2026-01-23', f:'O Tempo', t:'Manifestação na sede do Banco Master pede o afastamento de Toffoli do caso', u:'https://www.otempo.com.br/politica/judiciario/2026/1/23/manifestacao-na-sede-do-banco-master-pede-afastamento-de-toffoli-no-caso'},
+    ]
+  },
+  {
+    id:'alcolumbre', nome:'Davi Alcolumbre', cargo:'Presidente do Congresso', peca:'Torre negra · a8', glifo:'♜',
+    time:'preso', aura:0xe0996a, css:CSS.alcolumbre, casa:[0,7],
+    mov:'A torre que tranca o próprio roque: senta sobre os requerimentos da CPMI do Master e sobre 109 pedidos de impeachment de ministros.',
+    analise:'Com ao menos quatro requerimentos protocolados — um deles com <b>281 assinaturas</b> — Alcolumbre simplesmente se recusa a ler a criação da <b>CPMI do Banco Master</b> em plenário, alegando que a instalação é prerrogativa sua. Também administra a gaveta onde dormem, segundo ele próprio, <b>109 pedidos de impeachment</b> de ministros do STF — 54 deles contra Moraes. Em julho, o Congresso entrou em modo eleição e enterrou o tema. É a jogada de impunidade mais simples do tabuleiro: não jogar.',
+    noticias:[
+      {d:'2026-09-01', f:'O Tempo', t:'Viana pede impeachment de Moraes e ameaça Alcolumbre em caso de arquivamento', u:'https://www.otempo.com.br/politica/2026/9/1/viana-pede-impeachment-de-moraes-e-ameaca-afastar-alcolumbre-se-houver-arquivamento'},
+      {d:'2026-07-15', f:'Gazeta do Povo', t:'Congresso entra em "modo eleição" e engaveta a CPMI do Master', u:'https://www.gazetadopovo.com.br/republica/congresso-entra-em-modo-eleicao-engaveta-cpmi-do-master-e-abandona-pecs-de-lula/'},
+      {d:'2026-05-21', f:'Ag. Senado', t:'Davi: abertura da CPMI do Master é decisão do presidente do Congresso', u:'https://www12.senado.leg.br/noticias/materias/2026/05/21/davi-abertura-da-cpmi-do-master-e-decisao-do-presidente-do-congresso'},
+    ]
+  },
+  {
+    id:'gonet', nome:'Paulo Gonet', cargo:'Procurador-geral da República', peca:'Bispo negro · f8', glifo:'♝',
+    time:'preso', aura:0xc9b47a, css:CSS.gonet, casa:[5,7],
+    mov:'O bispo que aparece nas mensagens da dama — e que pediu para anular o relatório onde o próprio nome está escrito.',
+    analise:'O relatório da PF cita o procurador-geral: nas mensagens recuperadas, Gonet aparece dizendo sentir <b>"saudade"</b> de Vorcaro. Um dia após a divulgação, pediu a <b>anulação do laudo</b>. O detalhe que trava o tabuleiro: é da PGR que depende a denúncia do caso Master ao Supremo — e é a PGR que já considerou esgotada a negociação de delação do banqueiro. O bispo joga, ao mesmo tempo, de árbitro e de peça.',
+    noticias:[
+      {d:'2026-09-01', f:'A Gazeta', t:'Gonet pede a anulação do relatório da PF sobre Moraes e Vorcaro', u:'https://www.agazeta.com.br/brasil/gonet-pede-anulacao-de-relatorio-da-pf-sobre-moraes-e-vorcaro-0926'},
+      {d:'2026-09-02', f:'Poder360', t:'Leia as íntegras dos documentos que revelam a relação de Moraes com Vorcaro', u:'https://www.poder360.com.br/poder-justica/leia-as-integras-de-documentos-que-revelam-relacao-de-moraes-com-vorcaro/'},
+    ]
+  },
+  {
+    id:'faria', nome:'Fábio Faria', cargo:'Ex-ministro · articulador dos encontros', peca:'Cavalo negro · g8', glifo:'♞',
+    time:'preso', aura:0x86d0c5, css:CSS.faria, casa:[6,7],
+    mov:'O cavalo que salta entre os dois reinos: ex-ministro de Bolsonaro, era quem levava a dama de ouro até a casa da torre.',
+    analise:'Segundo o relatório da PF, era o ex-ministro das Comunicações de <b>Bolsonaro</b> quem articulava os encontros de Vorcaro na casa de <b>Moraes</b> em São Paulo — o cavalo fazendo o L entre o clã e a toga, a prova viva da tese do condomínio. As mensagens periciadas descrevem voos, jantares e minutas passando pelas suas mãos.',
+    noticias:[
+      {d:'2026-09-01', f:'Poder360', t:'Relatório da PF descreve encontros de Vorcaro na casa de Moraes articulados por Fábio Faria', u:'https://www.poder360.com.br/poder-justica/mendonca-retira-sigilo-de-acao-sobre-vorcaro-e-moraes/'},
+    ]
+  },
+  {
+    id:'costa', nome:'Paulo Henrique Costa', cargo:'Ex-presidente do BRB · preso', peca:'Cavalo negro · b8', glifo:'♞',
+    time:'preso', aura:0xa8c686, css:CSS.costa, casa:[1,7],
+    mov:'O cavalo do banco público: comprou R$ 12 bilhões em carteiras podres do Master — e hoje negocia contar como foi o lance.',
+    analise:'À frente do <b>BRB</b>, o banco de Brasília, Costa tentou comprar o Master — negócio vetado pelo Banco Central — e adquiriu cerca de <b>R$ 12 bilhões</b> em carteiras de crédito que a PF aponta como fraudadas. Preso em abril, <b>indiciado</b> em agosto ao lado de Vorcaro e Tanure, corre para fechar a própria delação premiada antes que a dama de ouro fale primeiro.',
+    noticias:[
+      {d:'2026-04-28', f:'O Tempo', t:'Vorcaro, ex-presidente do BRB e Zettel correm para propor delação premiada', u:'https://www.otempo.com.br/politica/judiciario/2026/4/28/vorcaro-ex-presidente-do-brb-e-zettel-correm-para-entregar-proposta-de-delacao-premiada'},
+      {d:'2026-08-05', f:'Gazeta do Povo', t:'PF indicia Vorcaro, Paulo Henrique Costa e Nelson Tanure no caso Master', u:'https://www.gazetadopovo.com.br/republica/pf-pretende-concluir-inquerito-master-agosto-indiciar-daniel-vorcaro/'},
+    ]
+  },
+  {
+    id:'tanure', nome:'Nelson Tanure', cargo:'Empresário · indiciado', peca:'Peão negro avançado · g6', glifo:'♟',
+    time:'preso', aura:0xc78f5a, css:CSS.tanure, casa:[6,5],
+    mov:'O peão dos negócios, sempre uma casa à frente: sócio dos movimentos do Master, indiciado no relatório final da PF.',
+    analise:'Empresário veterano de aquisições turbulentas, Tanure aparece no inquérito como peça dos negócios que sustentavam o castelo do Master — e saiu <b>indiciado</b> no relatório final da primeira fase, ao lado de Vorcaro e do ex-presidente do BRB. Nega irregularidades.',
+    noticias:[
+      {d:'2026-08-05', f:'Gazeta do Povo', t:'Relatório final da PF indicia Vorcaro, Costa e Nelson Tanure', u:'https://www.gazetadopovo.com.br/republica/pf-pretende-concluir-inquerito-master-agosto-indiciar-daniel-vorcaro/'},
+    ]
+  },
+  {
+    id:'povo', nome:'O Povo', cargo:'Os peões brancos — e a multidão', peca:'Peões · 2ª fileira', glifo:'♟',
+    time:'limpo', aura:0xffd9a0, css:CSS.povo, casa:null, ehPovo:true,
+    mov:'A única força que não cabe no tabuleiro. Quando a multidão acende as luzes, todas as peças jogam com medo.',
+    analise:'De 2025 a 2026 o país foi às ruas seguidas vezes — os atos pró-anistia e os da esquerda contra a <b>PEC da Blindagem</b> (mais de 40 mil na Paulista de cada lado), os protestos do MBL/Missão na <b>Faria Lima</b> que ajudaram a derrubar Toffoli do caso Master, o "Acorda Brasil" de março. O próximo capítulo é domingo: o <b>7 de Setembro de 2026</b> convertido em ato "Fora Moraes" na Paulista, com o caso Vorcaro como mote. Na cena, cada ponto de luz é um celular aceso: o jogo se decide fora do tabuleiro, em outubro, nas urnas.',
+    noticias:[
+      {d:'2026-09-01', f:'Gazeta do Povo', t:'"Fora, Moraes" deve ser entoado de novo nas manifestações do 7 de Setembro', u:'https://www.gazetadopovo.com.br/republica/fora-moraes-deve-ser-entoado-em-manifestacoes-do-7-de-setembro-na-paulista/'},
+      {d:'2026-03-01', f:'C. em Foco', t:'Ato "Acorda Brasil" contra Lula e o STF reúne Flávio, Nikolas, Caiado e Zema', u:'https://www.congressoemfoco.com.br/noticia/116836/ato-contra-lula-e-stf-reune-flavio-nikolas-caiado-e-zema-na-paulista'},
+      {d:'2026-01-23', f:'O Tempo', t:'Manifestação na sede do Banco Master pede afastamento de Toffoli do caso', u:'https://www.otempo.com.br/politica/judiciario/2026/1/23/manifestacao-na-sede-do-banco-master-pede-afastamento-de-toffoli-no-caso'},
+      {d:'2025-09-21', f:'CNN Brasil', t:'Ato da esquerda contra a PEC da Blindagem reúne mais de 42 mil na Paulista', u:'https://www.cnnbrasil.com.br/politica/ato-esquerda-avenida-paulista-estimativa-21-setembro/'},
+    ]
+  },
+];
+
+/* arcos de movimento: origem → destino (ids), cor, rótulo (chipU = posição do rótulo na curva) */
+const MOVIMENTOS = [
+  {de:'vorcaro',  para:'moraes',  cor:0xe3b341, css:'#e3b341', rotulo:'R$ 80 mi ao escritório da família', altura:2.3, chipU:0.52, moedas:true},
+  {de:'mendonca', para:'moraes',  cor:0xc9d6ea, css:'#c9d6ea', rotulo:'♗f1×h8 · o sigilo levantado', altura:3.4, chipU:0.66},
+  {de:'moraes',   para:'bolsonaro', cor:0xe04a3f, css:'#ff7d74', rotulo:'27 anos · domiciliar', altura:2.6, chipU:0.45, desvio:[-1.2,-2.6]},
+  {de:'kim',      para:'alcolumbre', cor:0xff7a1f, css:'#ff7a1f', rotulo:'♞g1×a8 · a CPMI trancada', altura:3.9, chipU:0.26},
+  {de:'flavio',   para:'renan',  cor:0x9d8cff, css:'#b7aaff', rotulo:'Outubro · rumo à 8ª casa', altura:2.5, chipU:0.55, tracejado:true},
+];
+
+const CENARIO = {
+  titulo:'Uma partida, dois times',
+  sub:'Leitura de conjuntura · 2 de setembro de 2026',
+  lede:'O critério do tabuleiro é um só: relação documentada com o dinheiro do Banco Master — citação, investigação ou blindagem. De um lado, o exército marfim, que quer abrir o jogo; do outro, a fileira negra completa, de a8 a h8. Estar no time escuro não é sentença: cada carta registra os processos em curso e as negativas.',
+  lances:[
+    {glifo:'♛', css:CSS.master, txt:'<b>A dama de ouro caiu em d8:</b> fraude de até R$ 60 bi, conta de R$ 52 bi no FGC, Vorcaro preso e indiciado — e a terceira tentativa de delação que faz o time inteiro prender a respiração.'},
+    {glifo:'♜', css:CSS.stf, txt:'<b>A torre de h8 sob cerco:</b> o relatório da PF liga Vorcaro a Moraes — R$ 80 milhões ao escritório da família. Moraes nega; a PF ressalva que o laudo não é conclusivo; o Senado acumula 54 pedidos de impeachment.'},
+    {glifo:'♗', css:CSS.mendonca, txt:'<b>O bispo branco cortou f1–h8:</b> Mendonça re-prendeu Vorcaro, levantou o sigilo e mandou o caso ao plenário — o lance que ninguém no time escuro esperava.'},
+    {glifo:'♚', css:CSS.governo, txt:'<b>O rei negro joga por contenção:</b> Lula lidera (39%), a base derrubou o relatório que indiciava Vorcaro e Lulinha — e o rei capturado da partida anterior, Bolsonaro, move o peão passado Flávio por procuração.'},
+    {glifo:'♔', css:CSS.missao, txt:'<b>O exército marfim sai do meio do povo:</b> Renan (rei, até 7,6%), Amanda (dama) e Kim (cavalo que ataca a torre trancada de a8), com o bispo Mendonça e a torre PF abrindo colunas.'},
+    {glifo:'♟', css:CSS.povo, txt:'<b>Os peões brancos são o povo:</b> domingo, o 7 de Setembro vira ato "Fora Moraes" na Paulista — e em outubro a multidão em volta do tabuleiro dá o lance final, nas urnas.'},
+  ],
+  impunidade:{
+    titulo:'As jogadas da impunidade — o que vigiar',
+    itens:[
+      {glifo:'♝', css:CSS.gonet, txt:'<b>Anular o laudo:</b> a PGR já pediu a anulação do relatório da PF que cita Gonet e Moraes.'},
+      {glifo:'♜', css:CSS.alcolumbre, txt:'<b>Não jogar:</b> CPMI sem leitura no Congresso e 109 pedidos de impeachment dormindo na gaveta de Alcolumbre.'},
+      {glifo:'♟', css:CSS.stf, txt:'<b>Diluir no plenário:</b> o caso do colega julgado pelos próprios colegas, sem prazo e sem relator externo.'},
+      {glifo:'♛', css:CSS.master, txt:'<b>Enterrar a delação:</b> sem acordo homologado, os nomes que a dama de ouro conhece ficam com ela.'},
+      {glifo:'⏳', css:CSS.povo, txt:'<b>Correr o relógio:</b> depois de outubro, novo Senado, caso esfriado — e a velha aritmética de prescrições e foro.'},
+    ]
+  },
+  enquete:{
+    titulo:'Enquete: qual o melhor próximo lance?',
+    nota:'Enquete simbólica — o voto fica salvo só no seu navegador. Aqui só valem lances legais: pressão pacífica, imprensa livre, Justiça e urna.',
+    opcoes:[
+      {id:'cpmi',    glifo:'♞', txt:'♞g1×a8 — destravar a CPMI do Master no Congresso'},
+      {id:'delacao', glifo:'♛', txt:'♛ — a delação: Vorcaro entrega o jogo inteiro'},
+      {id:'senado',  glifo:'♜', txt:'♜ — o Senado finalmente pautar o impeachment de Moraes'},
+      {id:'ruas',    glifo:'♟', txt:'♟ — 7 de Setembro: a Paulista cheia, em paz'},
+      {id:'urnas',   glifo:'♔', txt:'♔ — outubro: virar o tabuleiro nas urnas'},
+    ]
+  },
+  nota:'Painel independente de análise política — visão Missão declarada. As peças e os lances são metáforas de opinião; os fatos e as negativas vêm do noticiário citado em cada carta. Estar em um time do tabuleiro não é acusação formal nem sentença.'
+};
+
+/* manchetes do letreiro (ordenadas na montagem) */
+const TICKER_EXTRA = [
+  {d:'2026-09-02', f:'Poder360', t:'PF ressalva que o relatório sobre Moraes e Vorcaro não é conclusivo; há mais celulares a periciar'},
+  {d:'2026-09-01', f:'Painel', t:'Reta final: 1º turno da eleição presidencial acontece em outubro'},
+];
+
+/* =====================================================================
+   CENA 3D
+   ===================================================================== */
+const SHOT = new URLSearchParams(location.search).has('shot');
+const REDUZ = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const CASA = 1.0;                       // lado de cada casa
+const TAB_TOPO = 0;                     // y do topo do tabuleiro
+const CHAO_Y = -2.1;
+
+const raiz = document.getElementById('cena');
+const renderer = new THREE.WebGLRenderer({antialias:true, powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.14;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+raiz.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x070b16, 0.0132);
+
+const camera = new THREE.PerspectiveCamera(40, innerWidth/innerHeight, 0.1, 400);
+
+/* ---------- ambiente PBR (PMREM a partir de cena sintética) ---------- */
+{
+  const env = new THREE.Scene();
+  const geo = new THREE.SphereGeometry(50, 16, 16);
+  const mat = new THREE.MeshBasicMaterial({side:THREE.BackSide, color:0x0a1226});
+  env.add(new THREE.Mesh(geo, mat));
+  const l1 = new THREE.Mesh(new THREE.SphereGeometry(8,8,8), new THREE.MeshBasicMaterial({color:0xfff0d0}));
+  l1.position.set(20,30,10); env.add(l1);
+  const l2 = new THREE.Mesh(new THREE.SphereGeometry(6,8,8), new THREE.MeshBasicMaterial({color:0x5a4a9a}));
+  l2.position.set(-25,12,-20); env.add(l2);
+  const l3 = new THREE.Mesh(new THREE.SphereGeometry(5,8,8), new THREE.MeshBasicMaterial({color:0x2a6a4a}));
+  l3.position.set(5,6,25); env.add(l3);
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(env, 0.06).texture;
+  pmrem.dispose();
+}
+
+/* ---------- céu, estrelas e lua ---------- */
+{
+  const skyGeo = new THREE.SphereGeometry(300, 32, 24);
+  const skyMat = new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite:false, fog:false,
+    uniforms:{},
+    vertexShader:`varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+    fragmentShader:`varying vec3 vP;
+      void main(){
+        float h = normalize(vP).y;
+        vec3 alto = vec3(0.012,0.018,0.05);
+        vec3 meio = vec3(0.03,0.06,0.10);
+        vec3 horiz = vec3(0.05,0.12,0.11);
+        vec3 c = mix(horiz, meio, smoothstep(-0.02, 0.18, h));
+        c = mix(c, alto, smoothstep(0.15, 0.65, h));
+        gl_FragColor = vec4(c, 1.0);
+      }`
+  });
+  scene.add(new THREE.Mesh(skyGeo, skyMat));
+}
+function pontosCintilantes(posicoes, cor, tamBase, escala){
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(posicoes, 3));
+  const n = posicoes.length/3;
+  const fase = new Float32Array(n), tam = new Float32Array(n);
+  for(let i=0;i<n;i++){ fase[i]=Math.random()*Math.PI*2; tam[i]=tamBase*(0.6+Math.random()*0.9); }
+  g.setAttribute('aFase', new THREE.BufferAttribute(fase,1));
+  g.setAttribute('aTam', new THREE.BufferAttribute(tam,1));
+  const m = new THREE.ShaderMaterial({
+    transparent:true, depthWrite:false, blending:THREE.AdditiveBlending, fog:false,
+    uniforms:{ uT:{value:0}, uCor:{value:new THREE.Color(cor)}, uPix:{value:renderer.getPixelRatio()}, uEscala:{value:escala||120} },
+    vertexShader:`attribute float aFase; attribute float aTam; uniform float uT; uniform float uPix; uniform float uEscala;
+      varying float vA;
+      void main(){
+        vec4 mv = modelViewMatrix*vec4(position,1.0);
+        vA = 0.45 + 0.55*sin(uT*(1.2+fract(aFase)*1.8)+aFase*37.0);
+        gl_PointSize = aTam*uPix*(uEscala/max(1.0,-mv.z));
+        gl_Position = projectionMatrix*mv;
+      }`,
+    fragmentShader:`uniform vec3 uCor; varying float vA;
+      void main(){
+        vec2 d = gl_PointCoord-0.5;
+        float a = smoothstep(0.5,0.0,length(d));
+        gl_FragColor = vec4(uCor, a*a*vA);
+      }`
+  });
+  const pts = new THREE.Points(g, m);
+  pts.frustumCulled = false;
+  return pts;
+}
+{ // estrelas
+  const pos = [];
+  for(let i=0;i<650;i++){
+    const th = Math.random()*Math.PI*2, ph = Math.acos(Math.random()*0.85+0.12);
+    const r = 280;
+    pos.push(r*Math.sin(ph)*Math.cos(th), r*Math.cos(ph), r*Math.sin(ph)*Math.sin(th));
+  }
+  scene.add(pontosCintilantes(pos, 0xdfe8ff, 1.6, 300));
+}
+{ // lua com halo
+  const cv = document.createElement('canvas'); cv.width = cv.height = 256;
+  const cx = cv.getContext('2d');
+  const gr = cx.createRadialGradient(128,128,10,128,128,128);
+  gr.addColorStop(0,'rgba(255,244,220,1)'); gr.addColorStop(0.18,'rgba(255,240,210,0.9)');
+  gr.addColorStop(0.35,'rgba(220,215,255,0.18)'); gr.addColorStop(1,'rgba(200,200,255,0)');
+  cx.fillStyle = gr; cx.fillRect(0,0,256,256);
+  const tx = new THREE.CanvasTexture(cv);
+  const lua = new THREE.Sprite(new THREE.SpriteMaterial({map:tx, transparent:true, depthWrite:false, fog:false}));
+  lua.scale.set(46,46,1); lua.position.set(-95,78,-190);
+  scene.add(lua);
+}
+
+/* ---------- luzes ---------- */
+scene.add(new THREE.HemisphereLight(0x36415e, 0x0a0f0a, 0.55));
+const luar = new THREE.DirectionalLight(0xdfe6ff, 1.15);
+luar.position.set(-14, 22, 8);
+luar.castShadow = true;
+luar.shadow.mapSize.set(SHOT?4096:2048, SHOT?4096:2048);
+luar.shadow.camera.left = -16; luar.shadow.camera.right = 16;
+luar.shadow.camera.top = 16;  luar.shadow.camera.bottom = -16;
+luar.shadow.camera.far = 70; luar.shadow.bias = -0.0006; luar.shadow.normalBias = 0.03; luar.shadow.radius = 4;
+scene.add(luar);
+const calor = new THREE.DirectionalLight(0xffb469, 0.5);   // brilho quente da cidade
+calor.position.set(12, 6, 16);
+scene.add(calor);
+const contra = new THREE.DirectionalLight(0x7a5cff, 0.55); // contraluz roxa (a toga)
+contra.position.set(4, 10, -22);
+scene.add(contra);
+const focoTab = new THREE.SpotLight(0xfff2d8, 0.9, 60, Math.PI/5.2, 0.55, 1.4);
+focoTab.position.set(0, 22, 4); focoTab.target.position.set(0,0,0);
+scene.add(focoTab, focoTab.target);
+
+/* ---------- chão ---------- */
+{
+  const g = new THREE.CircleGeometry(160, 64);
+  const m = new THREE.MeshStandardMaterial({color:0x0a0e18, roughness:0.92, metalness:0.15});
+  const chao = new THREE.Mesh(g, m);
+  chao.rotation.x = -Math.PI/2; chao.position.y = CHAO_Y;
+  chao.receiveShadow = true;
+  scene.add(chao);
+  const brilho = new THREE.Mesh(
+    new THREE.CircleGeometry(26, 48),
+    new THREE.MeshBasicMaterial({color:0x131b2e, transparent:true, opacity:0.85, fog:true})
+  );
+  brilho.rotation.x = -Math.PI/2; brilho.position.y = CHAO_Y+0.01;
+  scene.add(brilho);
+}
+
+/* ---------- Brasília ao fundo (silhuetas) ---------- */
+{
+  const cidade = new THREE.Group();
+  const matPredio = new THREE.MeshStandardMaterial({color:0x0d1322, roughness:0.85, metalness:0.2, emissive:0x05070d});
+  const matClaro  = new THREE.MeshStandardMaterial({color:0x141c30, roughness:0.7, metalness:0.3, emissive:0x070a14});
+
+  // Congresso: plataforma + torres gêmeas + cúpula (Senado) + tigela (Câmara)
+  const cong = new THREE.Group();
+  const plat = new THREE.Mesh(new THREE.BoxGeometry(30, 1.1, 7), matClaro);
+  plat.position.y = 0.55; cong.add(plat);
+  const t1 = new THREE.Mesh(new THREE.BoxGeometry(2.1, 15, 4.6), matPredio); t1.position.set(-1.5, 8.6, 0);
+  const t2 = t1.clone(); t2.position.x = 1.5;
+  cong.add(t1, t2);
+  const cupula = new THREE.Mesh(new THREE.SphereGeometry(4.4, 24, 16, 0, Math.PI*2, 0, Math.PI/2), matClaro);
+  cupula.position.set(-10.5, 1.1, 0); cong.add(cupula);
+  const tigela = new THREE.Mesh(new THREE.SphereGeometry(4.6, 24, 16, 0, Math.PI*2, Math.PI/2, Math.PI/2), matClaro);
+  tigela.position.set(10.5, 5.4, 0); cong.add(tigela);
+  cong.position.set(0, CHAO_Y, -54);
+  cong.scale.setScalar(1.15);
+  cidade.add(cong);
+
+  // esplanada: fileiras de ministérios
+  for(let i=0;i<7;i++){
+    for(const lado of [-1,1]){
+      const b = new THREE.Mesh(new THREE.BoxGeometry(6.5, 3.1, 2.2), matPredio);
+      b.position.set(lado*(15+(i%2)*1.2), CHAO_Y+1.55, -26-i*4.0);
+      cidade.add(b);
+    }
+  }
+  // palácios (colunatas estilizadas): STF à direita, Planalto à esquerda
+  function palacio(x,z,esc){
+    const g = new THREE.Group();
+    const teto = new THREE.Mesh(new THREE.BoxGeometry(9.5,0.5,5), matClaro); teto.position.y = 3.3; g.add(teto);
+    const base = new THREE.Mesh(new THREE.BoxGeometry(10,0.4,5.5), matClaro); base.position.y = 0.2; g.add(base);
+    for(let i=0;i<5;i++){
+      const col = new THREE.Mesh(new THREE.BoxGeometry(0.32,2.9,0.9), matClaro);
+      col.position.set(-4+i*2, 1.85, 2.1);
+      col.rotation.z = 0.18;
+      g.add(col);
+    }
+    g.scale.setScalar(esc);
+    g.position.set(x, CHAO_Y, z);
+    return g;
+  }
+  cidade.add(palacio(30,-40,1.1), palacio(-30,-40,1.1));
+
+  // janelas acesas (pontos quentes espalhados nas torres do Congresso)
+  const wp = [];
+  for(let i=0;i<160;i++){
+    const x = -3.0+Math.random()*6.0, y = 1.7+Math.random()*16.5, z = (Math.random()<0.5?-1:1)*2.65;
+    wp.push(x, CHAO_Y+y, -54+z);
+  }
+  for(let i=0;i<130;i++){ // ministérios
+    const lado = Math.random()<0.5?-1:1, fila = (Math.random()*7)|0;
+    wp.push(lado*(15+(fila%2)*1.2)+(Math.random()*5.6-2.8), CHAO_Y+0.8+Math.random()*2.2, -26-fila*4.0+1.12);
+  }
+  const janelas = pontosCintilantes(wp, 0xffc880, 1.5, 90);
+  cidade.add(janelas);
+  scene.add(cidade);
+}
+
+/* ---------- pedestal + tabuleiro ---------- */
+const tabuleiro = new THREE.Group();
+scene.add(tabuleiro);
+{
+  const matPedra = new THREE.MeshStandardMaterial({color:0x11151f, roughness:0.55, metalness:0.35});
+  const p1 = new THREE.Mesh(new THREE.BoxGeometry(11.4, 0.7, 11.4), matPedra);
+  p1.position.y = CHAO_Y+0.35; p1.castShadow = p1.receiveShadow = true;
+  const p2 = new THREE.Mesh(new THREE.BoxGeometry(10.4, 1.5, 10.4), matPedra);
+  p2.position.y = CHAO_Y+1.35; p2.castShadow = p2.receiveShadow = true;
+  tabuleiro.add(p1,p2);
+
+  // moldura dourada
+  const ouro = new THREE.MeshPhysicalMaterial({color:0xc79a2a, roughness:0.32, metalness:1.0, clearcoat:0.6, emissive:0x6b4f12, emissiveIntensity:0.22});
+  const molde = new THREE.Mesh(new THREE.BoxGeometry(9.4, 0.34, 9.4), ouro);
+  molde.position.y = TAB_TOPO-0.17; molde.castShadow = molde.receiveShadow = true;
+  tabuleiro.add(molde);
+
+  // casas
+  const gC = new THREE.BoxGeometry(CASA*0.985, 0.1, CASA*0.985);
+  const mClara = new THREE.MeshPhysicalMaterial({color:CORES.neutroClaro, roughness:0.34, metalness:0.05, clearcoat:0.5, clearcoatRoughness:0.4});
+  const mEscura = new THREE.MeshPhysicalMaterial({color:CORES.neutroEscuro, roughness:0.3, metalness:0.15, clearcoat:0.6, clearcoatRoughness:0.35});
+  const claras = new THREE.InstancedMesh(gC, mClara, 32);
+  const escuras = new THREE.InstancedMesh(gC, mEscura, 32);
+  claras.castShadow = claras.receiveShadow = true;
+  escuras.castShadow = escuras.receiveShadow = true;
+  const M = new THREE.Matrix4();
+  let ic=0, ie=0;
+  for(let c=0;c<8;c++) for(let r=0;r<8;r++){
+    M.makeTranslation((c-3.5)*CASA, TAB_TOPO+0.005, (3.5-r)*CASA);
+    if((c+r)%2===0) escuras.setMatrixAt(ie++, M); else claras.setMatrixAt(ic++, M);
+  }
+  tabuleiro.add(claras, escuras);
+}
+const casaPos = (c,r)=> new THREE.Vector3((c-3.5)*CASA, TAB_TOPO+0.055, (3.5-r)*CASA);
+
+/* ---------- geometria das peças (torneadas) ---------- */
+function lathe(perfil, seg=48){
+  const pts = perfil.map(p=>new THREE.Vector2(p[0],p[1]));
+  const g = new THREE.LatheGeometry(pts, seg);
+  g.computeVertexNormals();
+  return g;
+}
+const GEO = {};
+GEO.peao = lathe([[0,0],[.30,0],[.30,.06],[.20,.10],[.16,.28],[.13,.42],[.17,.48],[.11,.52],[.15,.60],[.135,.68],[0,.80]]);
+GEO.torre = lathe([[0,0],[.40,0],[.40,.08],[.28,.14],[.23,.5],[.21,.9],[.30,1.0],[.30,1.22],[.24,1.22],[.24,1.06],[0,1.06]]);
+GEO.bispo = lathe([[0,0],[.36,0],[.36,.07],[.24,.12],[.17,.5],[.14,.78],[.22,.86],[.13,.92],[.19,1.06],[.11,1.24],[.05,1.30],[0,1.34]]);
+GEO.dama = lathe([[0,0],[.42,0],[.42,.08],[.28,.14],[.19,.6],[.15,1.0],[.26,1.12],[.17,1.2],[.23,1.34],[.13,1.44],[.07,1.5],[0,1.54]]);
+GEO.rei  = lathe([[0,0],[.45,0],[.45,.09],[.30,.15],[.20,.65],[.16,1.1],[.28,1.22],[.18,1.30],[.24,1.46],[.12,1.56],[0,1.60]]);
+GEO.cavaloBase = lathe([[0,0],[.38,0],[.38,.08],[.26,.13],[.22,.30],[.30,.38],[0,.40]]);
+// cabeça de cavalo estilizada (perfil extrudado)
+GEO.cavaloCabeca = (()=>{
+  const s = new THREE.Shape();
+  s.moveTo(-0.13,0);
+  s.lineTo(-0.22,0.28);   // dorso do pescoço
+  s.lineTo(-0.17,0.56);
+  s.lineTo(-0.05,0.76);   // nuca
+  s.lineTo(-0.09,0.93);   // orelha traseira
+  s.lineTo(-0.005,0.84);
+  s.lineTo(0.045,0.99);   // orelha dianteira
+  s.lineTo(0.1,0.84);
+  s.lineTo(0.34,0.75);    // testa
+  s.lineTo(0.5,0.62);     // focinho longo
+  s.lineTo(0.49,0.53);    // nariz
+  s.lineTo(0.33,0.5);
+  s.lineTo(0.3,0.42);     // boca
+  s.lineTo(0.15,0.37);
+  s.lineTo(0.03,0.15);    // peito
+  s.lineTo(0.07,0);
+  s.closePath();
+  const g = new THREE.ExtrudeGeometry(s, {depth:0.2, bevelEnabled:true, bevelSize:0.045, bevelThickness:0.045, bevelSegments:3, steps:1});
+  g.translate(-0.04,0.36,-0.1);
+  g.computeVertexNormals();
+  return g;
+})();
+GEO.cruzV = new THREE.BoxGeometry(0.07,0.26,0.07);
+GEO.cruzH = new THREE.BoxGeometry(0.2,0.07,0.07);
+GEO.ameia = new THREE.BoxGeometry(0.14,0.12,0.14);
+GEO.moeda = new THREE.CylinderGeometry(0.12,0.12,0.03,20);
+
+function materialPeca(cor, opts={}){
+  return new THREE.MeshPhysicalMaterial(Object.assign({
+    color:cor, roughness:0.36, metalness:0.22, clearcoat:0.85, clearcoatRoughness:0.3,
+    emissive:cor, emissiveIntensity:0.0
+  }, opts));
+}
+function montarPeca(tipo, mat){
+  const g = new THREE.Group();
+  const add = (geo)=>{ const m = new THREE.Mesh(geo, mat); m.castShadow = m.receiveShadow = true; g.add(m); return m; };
+  if(tipo==='cavalo'){
+    add(GEO.cavaloBase);
+    add(GEO.cavaloCabeca);
+  } else if(tipo==='peaopro'){
+    const corpo = add(GEO.peao); corpo.scale.setScalar(1.55);
+    const coroa = new THREE.Mesh(new THREE.TorusGeometry(0.135,0.032,10,24), mat);
+    coroa.rotation.x = Math.PI/2; coroa.position.y = 1.28; coroa.castShadow = true; g.add(coroa);
+    for(let i=0;i<5;i++){
+      const p = new THREE.Mesh(new THREE.ConeGeometry(0.035,0.1,8), mat);
+      const an = i/5*Math.PI*2;
+      p.position.set(Math.cos(an)*0.135, 1.34, Math.sin(an)*0.135);
+      p.castShadow = true; g.add(p);
+    }
+  } else {
+    add(GEO[tipo]);
+    if(tipo==='rei'){ const v = add(GEO.cruzV); v.position.y = 1.72; const h = add(GEO.cruzH); h.position.y = 1.70; }
+    if(tipo==='torre'){
+      for(let i=0;i<5;i++){ const a = add(GEO.ameia); const an = i/5*Math.PI*2; a.position.set(Math.cos(an)*0.24, 1.27, Math.sin(an)*0.24); }
+    }
+    if(tipo==='dama'){
+      for(let i=0;i<7;i++){
+        const p = new THREE.Mesh(new THREE.ConeGeometry(0.045,0.13,8), mat);
+        const an = i/7*Math.PI*2;
+        p.position.set(Math.cos(an)*0.17, 1.55, Math.sin(an)*0.17);
+        p.castShadow = true; g.add(p);
+      }
+    }
+  }
+  return g;
+}
+function tipoDePeca(nomePeca){
+  if(nomePeca.includes('Torre')) return 'torre';
+  if(nomePeca.includes('Bispo')) return 'bispo';
+  if(nomePeca.includes('Dama')) return 'dama';
+  if(nomePeca.includes('Rei')) return 'rei';
+  if(nomePeca.includes('Cavalo')) return 'cavalo';
+  return 'peao';
+}
+
+/* ---------- peças dos atores ---------- */
+const pecas = [];           // {ator, grupo, hit, baseY, saltoFase}
+const grupoPecas = new THREE.Group();
+tabuleiro.add(grupoPecas);
+const ESCALA_PECA = 1.16;
+
+for(const ator of ATORES){
+  if(ator.ehPovo) continue;
+  const escuro = ator.time==='preso';
+  const mat = materialPeca(TIME[ator.time].cor, escuro ? {metalness:0.5, roughness:0.32} : {});
+  mat.emissive = new THREE.Color(ator.aura);
+  if(ator.ouro){ mat.metalness = 1.0; mat.roughness = 0.24; mat.color = new THREE.Color(0xd9a72e); }
+  const tipo = tipoDePeca(ator.peca);
+  const grupo = montarPeca(tipo, mat);
+  grupo.scale.setScalar(ator.passado ? ESCALA_PECA*1.3 : ESCALA_PECA);
+
+  let pos;
+  if(ator.foraDoTabuleiro){
+    pos = new THREE.Vector3(-4.98, TAB_TOPO-0.02, 0.9);        // capturado, à margem oeste do pedestal
+  } else {
+    pos = casaPos(ator.casa[0], ator.casa[1]);
+  }
+  grupo.position.copy(pos);
+
+  if(ator.caida){
+    grupo.rotation.z = Math.PI/2 * 0.94;
+    grupo.rotation.y = ator.foraDoTabuleiro ? 2.4 : 0.7;
+    grupo.position.y += 0.34;
+  }
+  if(tipo==='cavalo'){ // brancos encaram o norte; negros, o sul
+    grupo.rotation.y = (escuro ? -Math.PI/2 : Math.PI/2) + (Math.random()*0.2-0.1);
+  }
+
+  // tornozeleira do rei capturado
+  if(ator.id==='bolsonaro'){
+    const anel = new THREE.Mesh(
+      new THREE.TorusGeometry(0.5, 0.055, 10, 28),
+      new THREE.MeshStandardMaterial({color:0x0c0e12, roughness:0.5, metalness:0.4})
+    );
+    anel.rotation.x = Math.PI/2; anel.position.y = 0.16; anel.castShadow = true;
+    grupo.add(anel);
+    const led = new THREE.Mesh(new THREE.SphereGeometry(0.05,10,10),
+      new THREE.MeshBasicMaterial({color:0xff2b1f}));
+    led.position.set(0.5,0.16,0); anel.add(led);
+    grupo.userData.led = led;
+  }
+
+  // aura na base (anel discreto na cor de identidade do ator)
+  if(!ator.caida){
+    const aura = new THREE.Mesh(
+      new THREE.RingGeometry(0.52, 0.66, 40),
+      new THREE.MeshBasicMaterial({color:ator.aura, transparent:true, opacity:0.4, side:THREE.DoubleSide, depthWrite:false})
+    );
+    aura.rotation.x = -Math.PI/2; aura.position.y = 0.02;
+    grupo.add(aura);
+  }
+
+  // hitbox invisível
+  const hit = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 2.2, 10),
+    new THREE.MeshBasicMaterial({visible:false}));
+  hit.position.y = ator.caida ? 0.2 : 1.0;
+  hit.userData.atorId = ator.id;
+  grupo.add(hit);
+
+  grupoPecas.add(grupo);
+  pecas.push({ator, grupo, hit, baseY:grupo.position.y, saltoFase:Math.random()*Math.PI*2, matBase:mat});
+}
+
+/* exércitos de fundo: peças sem protagonista + fileiras de peões */
+{
+  const matMarfim = materialPeca(TIME.limpo.cor);
+  const matNegro  = materialPeca(TIME.preso.cor, {metalness:0.5, roughness:0.32});
+  const poe = (tipo, c, r, mat, rotY)=>{
+    const g = montarPeca(tipo, mat);
+    g.scale.setScalar(ESCALA_PECA*(tipo==='peao'?1:0.96));
+    g.position.copy(casaPos(c,r));
+    if(rotY) g.rotation.y = rotY;
+    grupoPecas.add(g);
+  };
+  poe('cavalo', 1, 0, matMarfim, Math.PI/2+0.08);   // b1
+  poe('bispo',  2, 0, matMarfim);                    // c1
+  poe('torre',  7, 0, matMarfim);                    // h1
+  for(let c=0;c<8;c++) poe('peao', c, 1, matMarfim); // 2ª fileira: o povo
+  for(const c of [0,1,2,3,5,7]) poe('peao', c, 6, matNegro); // peões da blindagem
+}
+
+/* moedas derramadas junto à dama caída */
+{
+  const ouroMat = new THREE.MeshPhysicalMaterial({color:0xe6b53a, roughness:0.25, metalness:1.0, clearcoat:0.5});
+  const moedas = new THREE.InstancedMesh(GEO.moeda, ouroMat, 26);
+  moedas.castShadow = moedas.receiveShadow = true;
+  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), E = new THREE.Euler(), S = new THREE.Vector3(1,1,1), P = new THREE.Vector3();
+  const origem = casaPos(3,7);
+  for(let i=0;i<26;i++){
+    const a = Math.random()*Math.PI*2, r = 0.25+Math.random()*1.05;
+    P.set(origem.x+Math.cos(a)*r, TAB_TOPO+0.075+(Math.random()<0.2?0.03:0), origem.z+Math.abs(Math.sin(a))*r*0.9);
+    E.set((Math.random()-0.5)*0.5, Math.random()*Math.PI, (Math.random()-0.5)*0.5);
+    Q.setFromEuler(E);
+    M.compose(P,Q,S);
+    moedas.setMatrixAt(i,M);
+  }
+  tabuleiro.add(moedas);
+}
+
+/* ---------- arcos de movimento ---------- */
+const arcos = [];   // {malha, chip, meio}
+function posDoAtor(id){
+  const p = pecas.find(p=>p.ator.id===id);
+  return p ? p.grupo.position.clone() : new THREE.Vector3();
+}
+for(const mv of MOVIMENTOS){
+  const A = posDoAtor(mv.de); A.y = TAB_TOPO+0.7;
+  const B = posDoAtor(mv.para); B.y = TAB_TOPO+0.7;
+  const meio = A.clone().lerp(B,0.5); meio.y = TAB_TOPO+mv.altura;
+  if(mv.desvio){ meio.x += mv.desvio[0]; meio.z += mv.desvio[1]; }
+  const curva = new THREE.QuadraticBezierCurve3(A, meio, B);
+  const tubo = new THREE.TubeGeometry(curva, 60, 0.045, 8, false);
+  const mat = new THREE.ShaderMaterial({
+    transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
+    uniforms:{ uT:{value:0}, uCor:{value:new THREE.Color(mv.cor)}, uReps:{value:mv.tracejado?14:7} },
+    vertexShader:`varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+    fragmentShader:`uniform float uT; uniform vec3 uCor; uniform float uReps; varying vec2 vUv;
+      void main(){
+        float f = fract(vUv.x*uReps - uT*0.7);
+        float traco = smoothstep(0.0,0.22,f)*smoothstep(0.62,0.34,f);
+        float pontas = smoothstep(0.0,0.08,vUv.x)*smoothstep(1.0,0.92,vUv.x);
+        float alfa = (0.22 + 0.78*traco)*pontas;
+        gl_FragColor = vec4(uCor*1.35, alfa);
+      }`
+  });
+  const malha = new THREE.Mesh(tubo, mat);
+  tabuleiro.add(malha);
+
+  // ponta de seta
+  const dir = curva.getTangent(0.985).normalize();
+  const seta = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.26, 10),
+    new THREE.MeshBasicMaterial({color:mv.cor, transparent:true, opacity:0.95}));
+  const pontaPos = curva.getPoint(0.985);
+  seta.position.copy(pontaPos);
+  seta.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir);
+  tabuleiro.add(seta);
+
+  // moedas fluindo no arco dourado
+  if(mv.moedas){
+    const ouroMat = new THREE.MeshPhysicalMaterial({color:0xe6b53a, roughness:0.25, metalness:1.0});
+    const fluxo = [];
+    for(let i=0;i<5;i++){
+      const m = new THREE.Mesh(GEO.moeda, ouroMat);
+      m.castShadow = true; m.userData.off = i/5;
+      tabuleiro.add(m); fluxo.push(m);
+    }
+    arcos.push({curva, fluxo});
+  }
+
+  // rótulo do arco (DOM)
+  const chip = document.createElement('div');
+  chip.className = 'chip-arco';
+  chip.innerHTML = mv.rotulo.replace(/(♗|♞|R\$)/g,'<b style="color:'+mv.css+'">$1</b>');
+  chip.style.borderColor = mv.css+'55';
+  document.getElementById('rotulos').appendChild(chip);
+  arcos.push({chip, meio: curva.getPoint(mv.chipU!==undefined?mv.chipU:0.5).add(new THREE.Vector3(0,0.3,0))});
+}
+
+/* ---------- o povo nas ruas ---------- */
+const POVO = {corpos:null, luzes:null};
+{
+  const N = 4600;
+  const corpoGeo = new THREE.CylinderGeometry(0.05, 0.075, 0.34, 6);
+  corpoGeo.translate(0, 0.17, 0);
+  const cabecaGeo = new THREE.SphereGeometry(0.062, 8, 8);
+  cabecaGeo.translate(0, 0.40, 0);
+  const matCorpo = new THREE.MeshStandardMaterial({roughness:0.9, metalness:0.05});
+  const corpos = new THREE.InstancedMesh(corpoGeo, matCorpo, N);
+  const cabecas = new THREE.InstancedMesh(cabecaGeo, matCorpo.clone(), N);
+  corpos.castShadow = cabecas.castShadow = false;
+  corpos.receiveShadow = true;
+
+  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), E = new THREE.Euler(), S = new THREE.Vector3(), P = new THREE.Vector3();
+  const cor = new THREE.Color();
+  const paleta = [0x2a2f3c,0x3a3226,0x25352c,0x40303a,0x2c3a4a,0x51402a,0x223,0x3c2f2f];
+  const vivas  = [0xff7a1f,0x2f7a50,0xe0c23f,0xd23b34,0xece2c8];
+  const luzPos = [];
+  let i = 0, tent = 0;
+  while(i<N && tent<N*30){
+    tent++;
+    const ang = Math.random()*Math.PI*2;
+    // multidão densa perto do pedestal, rareando ao longe; corredor aberto ao fundo (eixo monumental)
+    const raio = 7.6 + Math.pow(Math.random(),0.62)*24;
+    const x = Math.cos(ang)*raio, z = Math.sin(ang)*raio*0.92;
+    if(z < -16 && Math.abs(x) < 7.5) continue;          // eixo monumental livre
+    const esc = 0.7+Math.random()*0.4;
+    P.set(x, CHAO_Y, z);
+    E.set(0, Math.random()*Math.PI*2, 0); Q.setFromEuler(E);
+    S.set(esc, esc*(0.9+Math.random()*0.35), esc);
+    M.compose(P,Q,S);
+    corpos.setMatrixAt(i,M); cabecas.setMatrixAt(i,M);
+    const viva = Math.random()<0.09;
+    cor.setHex(viva ? vivas[(Math.random()*vivas.length)|0] : paleta[(Math.random()*paleta.length)|0]);
+    cor.multiplyScalar(viva ? 0.8 : 0.75+Math.random()*0.5).convertSRGBToLinear();
+    corpos.setColorAt(i, cor);
+    cabecas.setColorAt(i, cor.clone().multiplyScalar(1.15));
+    if(Math.random()<0.34) luzPos.push(x, CHAO_Y+0.46*esc+0.06, z);
+    i++;
+  }
+  corpos.count = cabecas.count = i;
+  corpos.instanceColor.needsUpdate = true;
+  cabecas.instanceColor.needsUpdate = true;
+  scene.add(corpos, cabecas);
+  const luzes = pontosCintilantes(luzPos, 0xffd9a0, 1.4, 55);
+  scene.add(luzes);
+  POVO.corpos = corpos; POVO.luzes = luzes;
+}
+
+/* ---------- câmera orbital própria ---------- */
+const orbita = {
+  alvo: new THREE.Vector3(0, 0.35, -0.35),
+  raio: 18.4, teta: 0.52, fi: 1.07,
+  alvoMeta: new THREE.Vector3(0, 0.35, -0.35), raioMeta: 18.4, tetaMeta: 0.52, fiMeta: 1.07,
+  arrastando:false, arrastou:false, px:0, py:0, ultimo: performance.now()
+};
+if(SHOT){ orbita.tetaMeta = orbita.teta = 0.56; orbita.fiMeta = orbita.fi = 1.05; orbita.raioMeta = orbita.raio = 18.2; }
+function aplicarCamera(){
+  const o = orbita;
+  o.teta += (o.tetaMeta-o.teta)*0.08;
+  o.fi   += (o.fiMeta-o.fi)*0.08;
+  o.raio += (o.raioMeta-o.raio)*0.08;
+  o.alvo.lerp(o.alvoMeta, 0.08);
+  const sf = Math.sin(o.fi);
+  camera.position.set(
+    o.alvo.x + o.raio*sf*Math.sin(o.teta),
+    o.alvo.y + o.raio*Math.cos(o.fi),
+    o.alvo.z + o.raio*sf*Math.cos(o.teta)
+  );
+  camera.lookAt(o.alvo);
+}
+const dom = renderer.domElement;
+dom.addEventListener('pointerdown', e=>{ orbita.arrastando = true; orbita.arrastou = false; orbita.px = e.clientX; orbita.py = e.clientY; orbita.ultimo = performance.now(); });
+addEventListener('pointerup', ()=> orbita.arrastando = false);
+addEventListener('pointermove', e=>{
+  if(orbita.arrastando){
+    const dx = (e.clientX-orbita.px)/innerWidth, dy = (e.clientY-orbita.py)/innerHeight;
+    if(Math.abs(e.clientX-orbita.px)+Math.abs(e.clientY-orbita.py) > 3) orbita.arrastou = true;
+    orbita.px = e.clientX; orbita.py = e.clientY;
+    orbita.tetaMeta -= dx*4.2;
+    orbita.fiMeta = THREE.MathUtils.clamp(orbita.fiMeta - dy*2.6, 0.55, 1.42);
+    orbita.ultimo = performance.now();
+  }
+});
+dom.addEventListener('wheel', e=>{
+  e.preventDefault();
+  orbita.raioMeta = THREE.MathUtils.clamp(orbita.raioMeta * (1+Math.sign(e.deltaY)*0.08), 8, 34);
+  orbita.ultimo = performance.now();
+}, {passive:false});
+
+/* ---------- interação: hover/clique ---------- */
+const raycaster = new THREE.Raycaster();
+const ponteiro = new THREE.Vector2();
+let pairando = null, selecionado = null;
+function atualizaPonteiro(e){
+  ponteiro.x = (e.clientX/innerWidth)*2-1;
+  ponteiro.y = -(e.clientY/innerHeight)*2+1;
+}
+dom.addEventListener('pointermove', e=>{
+  atualizaPonteiro(e);
+  raycaster.setFromCamera(ponteiro, camera);
+  const hits = raycaster.intersectObjects(pecas.map(p=>p.hit), false);
+  const novo = hits.length ? pecas.find(p=>p.hit===hits[0].object) : null;
+  if(novo!==pairando){
+    if(pairando) pairando.matBase.emissiveIntensity = pairando===selecionado?0.28:0.0;
+    pairando = novo;
+    if(pairando) pairando.matBase.emissiveIntensity = 0.35;
+    dom.style.cursor = pairando ? 'pointer' : 'grab';
+  }
+});
+dom.addEventListener('click', e=>{
+  if(orbita.arrastou) return;
+  atualizaPonteiro(e);
+  raycaster.setFromCamera(ponteiro, camera);
+  const hits = raycaster.intersectObjects(pecas.map(p=>p.hit), false);
+  if(hits.length){
+    selecionarAtor(hits[0].object.userData.atorId, true);
+  }
+});
+
+/* ---------- rótulos DOM projetados ---------- */
+const camadaRot = document.getElementById('rotulos');
+const rotulosPecas = [];
+for(const p of pecas){
+  const el = document.createElement('button');
+  el.className = 'rotulo';
+  el.style.border = '1px solid rgba(236,223,195,.16)';
+  el.style.font = 'inherit';
+  el.innerHTML = `<span class="ponto" style="color:${p.ator.css};background:${p.ator.css}"></span><span class="nome">${p.ator.nome}</span><span class="cargo">${p.ator.peca}</span>`;
+  el.addEventListener('click', ()=> selecionarAtor(p.ator.id, true));
+  camadaRot.appendChild(el);
+  const caixa = new THREE.Box3().setFromObject(p.grupo);
+  let alto = Math.max(0.8, caixa.max.y - p.grupo.position.y + 0.42);
+  if(p.ator.casa && p.ator.casa[1]===7) alto += (p.ator.casa[0]%3)*0.55;          // escalona a fileira de trás
+  if(p.ator.casa && p.ator.casa[1]===0) alto += (p.ator.casa[0]%2===1 ? 0.5 : 0); // e a da frente
+  if(p.ator.foraDoTabuleiro) alto += 0.75;
+  rotulosPecas.push({p, el, alto});
+}
+// faixas dos dois times, projetadas nas bordas do tabuleiro
+const faixaLimpo = document.createElement('div');
+faixaLimpo.className = 'faixa-time';
+faixaLimpo.innerHTML = 'SEM RABO PRESO <span>♔ o exército marfim</span>';
+const faixaPreso = document.createElement('div');
+faixaPreso.className = 'faixa-time escura';
+faixaPreso.innerHTML = 'COM RABO PRESO <span>♛ a fileira negra</span>';
+camadaRot.appendChild(faixaLimpo); camadaRot.appendChild(faixaPreso);
+const POS_FAIXA_LIMPO = new THREE.Vector3(1.8, TAB_TOPO+0.05, 5.9);
+const POS_FAIXA_PRESO = new THREE.Vector3(-4.9, TAB_TOPO+0.05, -5.6);
+
+// rótulo do povo
+const rotPovo = document.createElement('button');
+rotPovo.className = 'rotulo';
+rotPovo.style.font = 'inherit';
+rotPovo.innerHTML = `<span class="ponto" style="color:${CSS.povo};background:${CSS.povo}"></span><span class="nome">O Povo</span><span class="cargo">nas ruas</span>`;
+rotPovo.addEventListener('click', ()=> selecionarAtor('povo', true));
+camadaRot.appendChild(rotPovo);
+const POS_POVO = new THREE.Vector3(-10.5, CHAO_Y+1.5, 3.2);
+
+const V = new THREE.Vector3();
+function projeta(pos3, el, margem=40){
+  V.copy(pos3).project(camera);
+  const atras = V.z > 1;
+  const x = (V.x*0.5+0.5)*innerWidth, y = (-V.y*0.5+0.5)*innerHeight;
+  if(atras || x<-margem || x>innerWidth+margem || y<-margem || y>innerHeight+margem){
+    el.style.opacity = '0'; el.style.pointerEvents = 'none';
+    return;
+  }
+  el.style.opacity = '';
+  el.style.pointerEvents = '';
+  el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%,-100%)`;
+}
+
+/* ---------- painel + legenda + ticker ---------- */
+const painel = document.getElementById('painel');
+const pf = document.getElementById('painel-faixa');
+const pc = document.getElementById('painel-chips');
+const pt = document.getElementById('painel-titulo');
+const ps = document.getElementById('painel-sub');
+const pb = document.getElementById('painel-corpo');
+document.getElementById('fechar').addEventListener('click', fecharPainel);
+document.getElementById('btn-cenario').addEventListener('click', ()=> mostrarCenario(true));
+
+function fecharPainel(){
+  painel.classList.remove('aberto');
+  if(selecionado){ selecionado.matBase.emissiveIntensity = 0; selecionado = null; }
+  document.querySelectorAll('.rotulo.ativo').forEach(r=>r.classList.remove('ativo'));
+}
+function listaNoticias(nots){
+  if(!nots || !nots.length) return '';
+  return `<div class="secao">No noticiário</div><ul class="noticias">` + nots.map(n=>{
+    const dt = n.d.length>7 ? n.d.slice(8,10)+'·'+n.d.slice(5,7)+'·'+n.d.slice(2,4) : n.d.slice(5,7)+'·'+n.d.slice(2,4);
+    const titulo = n.u ? `<a href="${n.u}" target="_blank" rel="noopener">${n.t}</a>` : n.t;
+    return `<li><div class="meta"><span class="data">${dt}</span><span class="fonte">${n.f}</span></div><div class="titulo-n">${titulo}</div></li>`;
+  }).join('') + `</ul>`;
+}
+function mostrarCenario(abrir){
+  pf.style.background = `linear-gradient(180deg, var(--ouro-claro), var(--ouro))`;
+  pc.innerHTML = `<span class="chip" style="color:var(--ouro-claro)">Análise</span><span class="chip" style="color:${CSS.missao}">Visão Missão</span>`;
+  pt.textContent = CENARIO.titulo;
+  ps.textContent = CENARIO.sub;
+  pb.innerHTML =
+    `<p class="analise">${CENARIO.lede}</p>` +
+    `<ul class="lances">` + CENARIO.lances.map(l=>
+      `<li><span class="glifo" style="color:${l.css}">${l.glifo}</span><span class="texto">${l.txt}</span></li>`).join('') + `</ul>` +
+    `<div class="secao">${CENARIO.impunidade.titulo}</div>` +
+    `<ul class="lances">` + CENARIO.impunidade.itens.map(l=>
+      `<li><span class="glifo" style="color:${l.css}">${l.glifo}</span><span class="texto">${l.txt}</span></li>`).join('') + `</ul>` +
+    `<div class="secao">${CENARIO.enquete.titulo}</div>` +
+    `<div class="enquete" id="enquete">` + CENARIO.enquete.opcoes.map(o=>
+      `<button class="enquete-op" data-op="${o.id}"><span class="marca"></span>${o.txt}</button>`).join('') +
+    `<p class="nota-final" id="enquete-nota">${CENARIO.enquete.nota}</p></div>` +
+    listaNoticias(noticiasGerais()) +
+    `<p class="nota-final">${CENARIO.nota}</p>`;
+  montarEnquete();
+  if(abrir) painel.classList.add('aberto');
+}
+function montarEnquete(){
+  let voto = null;
+  try{ voto = localStorage.getItem('tabuleiro-voto'); }catch(e){}
+  const caixa = document.getElementById('enquete');
+  if(!caixa) return;
+  const marca = ()=>{
+    caixa.querySelectorAll('.enquete-op').forEach(b=>{
+      b.classList.toggle('votado', b.dataset.op===voto);
+    });
+    const nota = document.getElementById('enquete-nota');
+    if(voto && nota) nota.textContent = 'Lance anotado no seu navegador. ' + CENARIO.enquete.nota;
+  };
+  caixa.querySelectorAll('.enquete-op').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      voto = b.dataset.op;
+      try{ localStorage.setItem('tabuleiro-voto', voto); }catch(e){}
+      marca();
+    });
+  });
+  marca();
+}
+function noticiasGerais(){
+  const tudo = [];
+  for(const a of ATORES) for(const n of (a.noticias||[])) tudo.push(n);
+  tudo.sort((a,b)=> b.d.localeCompare(a.d));
+  return tudo.slice(0,5);
+}
+function selecionarAtor(id, abrir){
+  const ator = ATORES.find(a=>a.id===id);
+  if(!ator) return;
+  if(selecionado) selecionado.matBase.emissiveIntensity = 0;
+  selecionado = pecas.find(p=>p.ator.id===id) || null;
+  if(selecionado) selecionado.matBase.emissiveIntensity = 0.28;
+  document.querySelectorAll('.rotulo.ativo').forEach(r=>r.classList.remove('ativo'));
+  const rot = rotulosPecas.find(r=>r.p.ator.id===id);
+  if(rot) rot.el.classList.add('ativo'); else if(id==='povo') rotPovo.classList.add('ativo');
+
+  pf.style.background = ator.css;
+  const corTime = ator.time==='limpo' ? '#e8dcc0' : '#8a90a8';
+  pc.innerHTML = `<span class="chip" style="color:${corTime}">${TIME[ator.time].nome}</span><span class="chip" style="color:${ator.css}">${ator.glifo} ${ator.peca}</span>`;
+  pt.textContent = ator.nome;
+  ps.textContent = ator.cargo;
+  pb.innerHTML =
+    `<p class="mov" style="border-color:${ator.css}">${ator.mov}</p>` +
+    `<p class="analise">${ator.analise}</p>` +
+    listaNoticias(ator.noticias) +
+    `<p class="nota-final">${CENARIO.nota}</p>`;
+  if(abrir) painel.classList.add('aberto');
+
+  // voo suave da câmera até a peça
+  const alvo = id==='povo' ? POS_POVO.clone().setY(0.2) : posDoAtor(id).setY(0.9);
+  orbita.alvoMeta.copy(alvo.multiplyScalar(0.55));
+  orbita.raioMeta = id==='povo' ? 20 : 13.5;
+  orbita.ultimo = performance.now();
+}
+
+/* legenda */
+{
+  const itens = [
+    ['Marfim — sem rabo preso', '#e8dcc0'], ['Negras — com rabo preso', '#6a7089'],
+    ['O dinheiro do Master', CSS.master], ['O povo nas ruas', CSS.povo],
+  ];
+  document.getElementById('legenda').innerHTML = itens.map(([n,c])=>
+    `<span class="peca-chip"><i style="color:${c};background:${c}"></i>${n}</span>`).join('');
+}
+/* ticker */
+{
+  const tudo = noticiasGerais().concat(TICKER_EXTRA).concat(
+    ATORES.flatMap(a=>a.noticias||[])
+  );
+  const vistos = new Set(); const itens = [];
+  for(const n of tudo.sort((a,b)=>b.d.localeCompare(a.d))){
+    if(vistos.has(n.t)) continue; vistos.add(n.t); itens.push(n);
+  }
+  const MESES = ['','JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+  const html = itens.map(n=>{
+    const mes = MESES[parseInt(n.d.slice(5,7),10)] || '';
+    const dia = n.d.length>7 ? n.d.slice(8,10)+' ' : '';
+    return `<span class="manchete"><span class="data">${dia}${mes} ${n.d.slice(0,4)}</span>${n.t}<span class="fonte">${n.f}</span></span>`;
+  }).join('');
+  document.getElementById('trilho').innerHTML = html + html; // loop contínuo
+}
+
+/* cenário aberto por padrão (exceto em telas estreitas) */
+if(innerWidth>900) mostrarCenario(true); else mostrarCenario(false);
+if(SHOT){ mostrarCenario(true); document.getElementById('dica').classList.add('oculto'); }
+
+/* pipeline de cor: hex de autoria é sRGB → converter para linear (r128 não converte sozinho) */
+{
+  const feitos = new WeakSet();
+  scene.traverse(o=>{
+    const mats = o.material ? (Array.isArray(o.material)?o.material:[o.material]) : [];
+    for(const m of mats){
+      if(feitos.has(m)) continue; feitos.add(m);
+      if(m.color && m.color.isColor) m.color.convertSRGBToLinear();
+      if(m.emissive && m.emissive.isColor) m.emissive.convertSRGBToLinear();
+      if(m.uniforms && m.uniforms.uCor) m.uniforms.uCor.value.convertSRGBToLinear();
+    }
+    if(o.isLight){
+      if(o.color) o.color.convertSRGBToLinear();
+      if(o.groundColor) o.groundColor.convertSRGBToLinear();
+    }
+  });
+  scene.fog.color.convertSRGBToLinear();
+}
+let fontesProntas = false;
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ fontesProntas = true; });
+else fontesProntas = true;
+
+/* ---------- laço de animação ---------- */
+const relogio = new THREE.Clock();
+let quadros = 0;
+const materiaisTempo = [];
+scene.traverse(o=>{ if(o.material && o.material.uniforms && o.material.uniforms.uT) materiaisTempo.push(o.material); });
+
+function animar(){
+  requestAnimationFrame(animar);
+  const t = relogio.getElapsedTime();
+
+  if(!REDUZ) for(const m of materiaisTempo) m.uniforms.uT.value = t;
+
+  // deriva automática quando ocioso
+  if(!SHOT && !REDUZ && performance.now()-orbita.ultimo > 6000 && !painelHover){
+    orbita.tetaMeta += 0.00075;
+  }
+  aplicarCamera();
+
+  // respiro sutil das peças + LED da tornozeleira + salto do cavalo
+  for(const p of pecas){
+    if(p.ator.caida) continue;
+    const flutua = p.ator.salto ? Math.max(0,Math.sin(t*1.4+p.saltoFase))*0.16 : 0;
+    p.grupo.position.y = p.baseY + flutua;
+  }
+  const bolso = pecas.find(p=>p.ator.id==='bolsonaro');
+  if(bolso && bolso.grupo.userData.led){
+    bolso.grupo.userData.led.material.color.setHex(Math.sin(t*6)>0 ? 0xff2b1f : 0x36100c);
+  }
+
+  // moedas fluindo pelo arco dourado
+  for(const a of arcos){
+    if(a.fluxo){
+      for(const m of a.fluxo){
+        const u = (m.userData.off + t*0.09) % 1;
+        a.curva.getPoint(u, m.position);
+        m.rotation.x = t*2+m.userData.off*9; m.rotation.z = t*1.4;
+      }
+    }
+    if(a.chip) projeta(a.meio, a.chip);
+  }
+
+  // rótulos
+  const P = new THREE.Vector3();
+  for(const r of rotulosPecas){
+    P.copy(r.p.grupo.position); P.y += r.alto;
+    projeta(P, r.el);
+  }
+  projeta(POS_POVO, rotPovo);
+  projeta(POS_FAIXA_LIMPO, faixaLimpo);
+  projeta(POS_FAIXA_PRESO, faixaPreso);
+
+  renderer.render(scene, camera);
+  quadros++;
+  if(SHOT && quadros>=6 && fontesProntas) window.__READY = true;
+}
+let painelHover = false;
+painel.addEventListener('pointerenter', ()=> painelHover = true);
+painel.addEventListener('pointerleave', ()=> painelHover = false);
+dom.style.cursor = 'grab';
+animar();
+
+addEventListener('resize', ()=>{
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
